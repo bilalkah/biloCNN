@@ -1,3 +1,4 @@
 2011_10_03/
 *.zip
 .ipynb_checkpoints
+*__pycache__*

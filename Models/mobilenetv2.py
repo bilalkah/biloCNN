@@ -68,14 +68,15 @@ class BottleneckBlock(nn.Module):
         return out
 
 class MobileNetV2(nn.Module):
-    def __init__(self,num_classes=10):
+    def __init__(self,in_channels = 3, num_classes=10):
         super(MobileNetV2,self).__init__()
+        self.in_channels = in_channels
         self.first_conv_channels = 32
         self.last_conv_channels = 1280
         
         self.initial_conv = nn.Sequential(
             nn.Conv2d(
-                in_channels = 3,
+                in_channels = self.in_channels,
                 out_channels = self.first_conv_channels,
                 kernel_size = 3,
                 stride = 2,
@@ -96,11 +97,11 @@ class MobileNetV2(nn.Module):
             nn.BatchNorm2d(1280),
             nn.ReLU6(inplace=True),
             nn.AvgPool2d(7),
-            nn.Conv2d(
-                in_channels=1280,
-                out_channels=num_classes,
-                kernel_size=1,
-            )
+            # nn.Conv2d(
+            #     in_channels=1280,
+            #     out_channels=num_classes,
+            #     kernel_size=1,
+            # )
         )
         
         
@@ -126,6 +127,7 @@ class MobileNetV2(nn.Module):
         
 
 if __name__ == '__main__':
-    net = MobileNetV2()
-    x = torch.randn(6,3,224,224)
+    net = MobileNetV2(in_channels=6,num_classes=10)
+    x = torch.randn(6,6,224,224)
     print(net(x).shape)
+    # print(net)
