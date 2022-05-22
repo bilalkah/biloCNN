@@ -7,7 +7,8 @@ import sys
 
 
 
-"""_summary_ = Camera CNN model for pose estimation
+"""
+    _summary_ = Camera CNN model for pose estimation
 
     Returns:
         Tensor: concatenated output of translation and rotation
@@ -18,9 +19,9 @@ class CameraCNN(nn.Module):
         self.in_channels = in_channels
 
         self.featureNet = MobileNetV2(
-           in_channels=in_channels,
-        )     
-
+        in_channels=in_channels,
+        )
+        
         self.translationNet = Regressor(
             in_channels=1280,
             out_channels=translation,

@@ -8,3 +8,5 @@ ros_ws/devel
 ros_ws/logs
 data_odometry_color/
 data_odometry_poses/
+weights/
+*.ipynb

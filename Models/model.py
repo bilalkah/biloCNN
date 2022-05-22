@@ -24,43 +24,46 @@ class Model():
                 
                 for data, target in tepoch:
                     data, target = data.to(self.device), target.to(self.device)
+                    # print("data ",data.type())
+                    # print("target ",target.type())
                     optimizer.zero_grad()
                     scores = self.model(data)
             
                     loss = criterion(scores, target)
                     if torch.isnan(loss):
                         continue
-                    train_acc = self.metric(scores,target)        
+                    # train_acc = self.metric(scores,target)        
                     epoch_loss.append(loss.item())
-                    epoch_acc.append(train_acc.item())
-                    val_loss = 0
+                    # epoch_acc.append(train_acc.item())
+                    # val_loss = 0
                         
                     loss.backward()
                     optimizer.step()
             
-                    tepoch.set_postfix(Train_loss = loss.item(),Train_acc = train_acc.item())
+                    tepoch.set_postfix(Train_loss = loss.item()) #,Train_acc = train_acc.item()
                     sleep(0.1)
 
-                epoch_val_loss = []
-                epoch_val_acc = []
+                # epoch_val_loss = []
+                # epoch_val_acc = []
                 
-                for _ ,(data, target) in enumerate(val_loader):
-                    data, target = data.to(self.device), target.to(self.device)
-                    scores = self.model(data)
-                    loss = criterion(scores, target)
-                    acc = self.metric(scores,target) 
-                    epoch_val_loss.append(loss.item())
-                    epoch_val_acc.append(acc.item())
+                # for _ ,(data, target) in enumerate(val_loader):
+                #     data, target = data.to(self.device), target.to(self.device)
+                #     scores = self.model(data)
+                #     loss = criterion(scores, target)
+                #     acc = self.metric(scores,target) 
+                #     epoch_val_loss.append(loss.item())
+                #     epoch_val_acc.append(acc.item())
                     
-                self.val_loss.append(np.mean(epoch_val_loss))
-                self.val_acc.append(np.mean(epoch_val_acc))
+                # self.val_loss.append(np.mean(epoch_val_loss))
+                # self.val_acc.append(np.mean(epoch_val_acc))
                 self.train_loss.append(np.mean(epoch_loss))
-                self.train_acc.append(np.mean(epoch_acc))
+                self.save_weight(name=save_name+str(self.train_loss[-1]))
+                # self.train_acc.append(np.mean(epoch_acc))
                 
-                if self.val_acc[len(self.val_acc)-1] > 0.5 and np.argmax(np.asarray(self.val_acc)) == len(self.val_acc)-1:
-                    self.save_weight(save_name+str(self.val_acc[-1]))
-                print(f"train_loss: {np.mean(epoch_loss)} train_acc: {np.mean(epoch_acc)} - val_loss: {np.mean(epoch_val_loss)} val_acc: {np.mean(epoch_val_acc)}")
-    
+                # if self.val_acc[len(self.val_acc)-1] > 0.5 and np.argmax(np.asarray(self.val_acc)) == len(self.val_acc)-1:
+                #     self.save_weight(save_name+str(self.val_acc[-1]))
+                # print(f"train_loss: {np.mean(epoch_loss)} train_acc: {np.mean(epoch_acc)} - val_loss: {np.mean(epoch_val_loss)} val_acc: {np.mean(epoch_val_acc)}")
+
     def eval(self,test_loader):
         with tqdm.tqdm(test_loader,unit="batch") as tepoch:
             tepoch.set_description(f"Evaluate for test")

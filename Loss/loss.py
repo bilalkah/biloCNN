@@ -43,6 +43,8 @@ class DOF6Loss(nn.Module):
         
         
         # calculate MSE loss (alpha, gamma) for translation
+        # print(translation.shape)
+        # print(translation_pred.shape)
         translation_loss = torch.sum(torch.pow(translation - translation_pred,2),dim=1)
         
         # translation_loss = torch.pow(1-translation_pred,self.gamma) * torch.log(translation_pred)

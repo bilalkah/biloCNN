@@ -50,9 +50,10 @@ class KittiDataset(Dataset):
             
             
             euler_angles = cv2.Rodrigues(self.rotation_matrix)[0]
-            
+            # print(euler_angles.shape)
             # concatenate translation and rotation
             self.label.append(np.concatenate((self.translation_matrix, euler_angles), axis=0))
+            # print(np.concatenate((self.translation_matrix, euler_angles)).shape)
             self.data.append(images)
         
     def __len__(self):
@@ -83,5 +84,8 @@ class KittiDataset(Dataset):
         # subtract label2 from label1
         label = label2 - label1
         
-        return img, label 
+        # drop last dimension
+        label = label[:,0]
+        label = torch.from_numpy(label)
+        return img, label
         
