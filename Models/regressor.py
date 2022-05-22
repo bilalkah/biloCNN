@@ -3,11 +3,11 @@ import torch.nn as nn
 
 
 class Regressor(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels = 1280, mid_channels = [512,256,128], out_channels = 3):
         super(Regressor, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.middle_channels = [512,265,128]
+        self.middle_channels = mid_channels
         self.regressor = self.create_regressor()
         
     def create_regressor(self):
@@ -31,7 +31,7 @@ class Regressor(nn.Module):
         return self.regressor(x)
     
 if __name__ == '__main__':
-    model = Regressor(in_channels=1280, out_channels=3600)
+    model = Regressor(in_channels=1280, out_channels=3)
     x = torch.randn(4,1280)
     print(model(x).shape)
      
