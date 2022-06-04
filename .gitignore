@@ -10,3 +10,5 @@ data_odometry_color/
 data_odometry_poses/
 weights/
 *.ipynb
+velodyne_points/
+*.ply

@@ -11,7 +11,7 @@ class DOF6Loss(nn.Module):
     0 <= alpha <= 1
     0 <= gamma <=5
     """
-    def __init__(self,alpha=0.5,gamma=2,epsilon=1e-9,rotation_coef=6,translation_coef=3,weight=None,size_average=True) -> None:
+    def __init__(self,alpha=0.5,gamma=2,epsilon=1e-9,rotation_coef=0.1,translation_coef=2.7,weight=None,size_average=True) -> None:
         super(DOF6Loss,self).__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -19,7 +19,8 @@ class DOF6Loss(nn.Module):
         self.size_average = size_average
         self.rotation_coef = rotation_coef
         self.translation_coef = translation_coef
-
+        self.out_translation = 0
+        self.out_rotation = 0
     def forward(self,prediction,target):
         pred = torch.clone(torch.tanh(prediction))
         
@@ -36,16 +37,27 @@ class DOF6Loss(nn.Module):
         
         # multiply translation_pred's variables by translation_coef
         translation_pred = translation_pred * self.translation_coef
-        
+        self.out_translation = translation_pred
         # multiply rotation_pred's variables by rotation_coef
         rotation_pred = rotation_pred * self.rotation_coef
-        
-        
-        
+        self.out_rotation = rotation_pred
+        # total displacement in translation_pred
+        translation_pred = torch.square(translation_pred)
+        translation_pred = torch.sum(translation_pred,dim=1)
+        # print(translation_pred.shape)
+        # print(translation_pred)
+
+        # total displacement in translation
+        translation = torch.square(translation)
+        translation = torch.sum(translation,dim=1)
+        # print(translation.shape)
+        # print(translation)
+
         # calculate MSE loss (alpha, gamma) for translation
         # print(translation.shape)
         # print(translation_pred.shape)
-        translation_loss = torch.sum(torch.pow(translation - translation_pred,2),dim=1)
+        translation_loss = torch.sum(torch.pow(translation - translation_pred,2),dim=0)
+        # print(translation_loss)
         
         # translation_loss = torch.pow(1-translation_pred,self.gamma) * torch.log(translation_pred)
         
@@ -65,23 +77,6 @@ class DOF6Loss(nn.Module):
         else :
             loss = torch.sum(loss)
         return loss
-        
-        
-        
-        # # distance between prediction and target
-        # distance = torch.norm(pred-target,dim=1)
-        
-        
-        
-        # for i, p in enumerate(pred):
-        #     tar = torch.zeros(pred.shape[1],dtype=torch.float,device='cuda' if torch.cuda.is_available() else 'cpu')
-        #     tar[target[i]] = 1.
-        #     loss[i] = -torch.mean(
-        #         tar*self.alpha*torch.pow((1-p),self.gamma)*torch.log2(p) 
-        #         + 
-        #         (1-tar)*self.alpha*torch.pow((p),self.gamma)*torch.log2(1-p)
-        #     )
-        # return torch.mean(loss)
 
 
 if __name__ == '__main__':
