@@ -10,7 +10,7 @@ ros_ws/*
 data_odometry_color/
 data_odometry_poses/
 weights/
-weights*
+weights_1/
 *.ipynb
 velodyne_points/
 *.ply
