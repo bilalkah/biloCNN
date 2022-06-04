@@ -6,6 +6,7 @@ ros_ws/.catkin_tools
 ros_ws/build
 ros_ws/devel
 ros_ws/logs
+ros_ws/*
 data_odometry_color/
 data_odometry_poses/
 weights/

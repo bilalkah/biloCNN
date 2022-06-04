@@ -49,9 +49,10 @@ class CameraCNN(nn.Module):
                 nn.init.constant_(m.bias, 0)
         
     def forward(self, x):
-        x = self.featureNet(x)
-        translation = self.translationNet(x)
-        rotation = self.rotationNet(x)
+        self.ft = self.featureNet(x)
+        
+        translation = self.translationNet(self.ft)
+        rotation = self.rotationNet(self.ft)
         
         # concatenate translation and rotation
         return torch.cat((translation, rotation), dim=1)

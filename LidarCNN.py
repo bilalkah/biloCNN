@@ -32,7 +32,7 @@ net_cfgs = [
 class LidarCNN(nn.Module):
     def __init__(self,in_channels=6, translation = 3, rotation = 3):
         super(LidarCNN,self).__init__()
-        self.features = self.create_darknet19_features()
+        self.featureNet = self.create_darknet19_features()
         
         self.translationNet = Regressor(
             in_channels=1280,
@@ -79,9 +79,9 @@ class LidarCNN(nn.Module):
                 nn.init.constant_(m.bias, 0)
     
     def forward(self,x):
-        x = self.features(x).view(x.size(0),-1)
-        translation = self.translationNet(x)
-        rotation = self.rotationNet(x)
+        self.ft = self.featureNet(x).view(x.size(0),-1)
+        translation = self.translationNet(self.ft)
+        rotation = self.rotationNet(self.ft)
         return torch.cat((translation, rotation), dim=1)
     
     

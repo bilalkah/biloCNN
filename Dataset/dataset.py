@@ -108,6 +108,7 @@ class KittiPCLDataset(Dataset):
         self.data_augementation = data_augementation
         
         self.velodyne_path = "/home/bilal/Desktop/project/velodyne_points/data/*.bin"
+        self.poses_path = "/home/bilal/Desktop/project/data_odometry_poses/dataset/poses/" + sequence + ".txt"
         
         self.data = []
         self.label = []

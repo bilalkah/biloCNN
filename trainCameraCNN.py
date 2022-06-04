@@ -11,8 +11,8 @@ import torchvision.transforms as transforms
 from torch.utils import data
 from torch.utils.data import DataLoader
 
-torch.cuda.empty_cache()
-torch.cuda.memory_summary(device=None,abbreviated=False)
+# torch.cuda.empty_cache()
+# torch.cuda.memory_summary(device=None,abbreviated=False)
 
 batch = 32
 epoch = 30
