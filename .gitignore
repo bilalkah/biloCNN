@@ -12,6 +12,7 @@ data_odometry_poses/
 data_odometry_calib/
 weights/
 weights_1/
+weights_0/
 *.ipynb
 velodyne_points/
 *.ply
