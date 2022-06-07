@@ -16,3 +16,4 @@ weights_1/
 velodyne_points/
 *.ply
 noktalar/
+kitti/
