@@ -9,6 +9,7 @@ ros_ws/logs
 ros_ws/*
 data_odometry_color/
 data_odometry_poses/
+data_odometry_calib/
 weights/
 *.ipynb
 velodyne_points/

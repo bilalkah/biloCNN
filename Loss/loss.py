@@ -39,9 +39,11 @@ class DOF6Loss(nn.Module):
         # multiply translation_pred's variables by translation_coef
         translation_pred = translation_pred * self.translation_coef
         self.out_translation = translation_pred
+        translation_pred *= 100
         # multiply rotation_pred's variables by rotation_coef
         rotation_pred = rotation_pred * self.rotation_coef
         self.out_rotation = rotation_pred
+        rotation_pred *= 1000
         # total displacement in translation_pred
         translation_pred = torch.square(translation_pred)
         translation_pred = torch.sum(translation_pred,dim=1)
@@ -49,6 +51,7 @@ class DOF6Loss(nn.Module):
         # print(translation_pred)
 
         # total displacement in translation
+        translation *= 100
         translation = torch.square(translation)
         translation = torch.sum(translation,dim=1)
         # print(translation.shape)
@@ -63,6 +66,7 @@ class DOF6Loss(nn.Module):
         # translation_loss = torch.pow(1-translation_pred,self.gamma) * torch.log(translation_pred)
         
         # calculate MSE loss (alpha, gamma) for rotation
+        rotation *= 1000
         rotation_loss = torch.sum(torch.pow(rotation - rotation_pred,2),dim=1)
         
         # rotation_loss = torch.pow(1-rotation_pred,self.gamma) * torch.log(rotation_pred)
