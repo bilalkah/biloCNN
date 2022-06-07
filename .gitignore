@@ -15,3 +15,4 @@ weights_1/
 *.ipynb
 velodyne_points/
 *.ply
+noktalar/

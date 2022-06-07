@@ -7,6 +7,7 @@ import glob
 import numpy as np
 from open3d import *
 import struct
+import pykitti
 
 # import pointcloud library
 
@@ -18,30 +19,23 @@ import struct
 # Data will be consecutive images and label will be calculated as the difference between consecutive poses
 
 class KittiIMGDataset(Dataset):
-    def __init__(self, sequence="00", transform=None, data_augementation=False):
+    def __init__(self, sequence="00", path = "/home/plnm/biloCNN/kitti"):
         self.sequence = sequence
-        self.transform = transform
-        self.data_augementation = data_augementation
+        self.path = path
         
-        self.image_path = "/home/bilal/Desktop/project/data_odometry_color/dataset/sequences/" + sequence + "/image_2/*.png"
-        self.poses_path = "/home/bilal/Desktop/project/data_odometry_poses/dataset/poses/" + sequence + ".txt"
+        self.dataset = pykitti.odometry(self.path, self.sequence)
         
-        self.data = []
-        self.label = []
+        self.poses = []
         
         self.homogenous_matrix = np.zeros((4, 4), dtype=np.float)
         self.rotation_matrix = np.zeros((3, 3), dtype=np.float)
         self.translation_matrix = np.zeros((3, 1), dtype=np.float)
         
-        self.load_data()
+        self.load_poses()
 
-    def load_data(self):
-        file = open(self.poses_path, "r")
+    def load_poses(self):
         
-        for images in sorted(glob.glob(self.image_path)):
-            line = file.readline()
-            line = line.split(" ")
-            
+        for line in self.dataset.poses:
             for i in range(3):
                 for j in range(4):
                     self.homogenous_matrix[i][j] = line[i*4+j]
@@ -53,29 +47,23 @@ class KittiIMGDataset(Dataset):
             for i in range(3):
                 self.translation_matrix[i][0] = self.homogenous_matrix[i][3]
                 
-            
-            
-            
             euler_angles = cv2.Rodrigues(self.rotation_matrix)[0]
-            # print(euler_angles.shape)
-            # concatenate translation and rotation
-            self.label.append(np.concatenate((self.translation_matrix, euler_angles), axis=0))
-            # print(np.concatenate((self.translation_matrix, euler_angles)).shape)
-            self.data.append(images)
+            self.poses.append(np.concatenate((self.translation_matrix, euler_angles), axis=0))
+
         
     def __len__(self):
-        return len(self.data)
+        return len(self.dataset)
 
     def __getitem__(self, idx):
-        if idx >= len(self.data):
+        if idx >= len(self.dataset):
             raise IndexError("Index out of range")
         elif idx < 0:
             raise IndexError("Index out of range")
-        elif idx == len(self.data) - 1:
-            idx = len(self.data) - 2
+        elif idx == len(self.dataset) - 1:
+            idx = len(self.dataset) - 2
         
-        img1 = cv2.imread(self.data[idx])
-        img2 = cv2.imread(self.data[idx+1])
+        img1 = cv2.imread(self.dataset.cam2_files[idx])
+        img2 = cv2.imread(self.dataset.cam2_files[idx+1])
         
         # concatenate images
         img = np.concatenate((img1, img2), axis=2)
@@ -85,42 +73,50 @@ class KittiIMGDataset(Dataset):
         img = img / 255.0
         img = torch.from_numpy(img)
         
-        label1 = self.label[idx]
-        label2 = self.label[idx+1]
+        pose1 = self.poses[idx]
+        pose2 = self.poses[idx+1]
         
         # subtract label2 from label1
-        label = label2 - label1
+        pose = pose2 - pose1
         
         # drop last dimension
-        label = label[:,0]
-        label = torch.from_numpy(label)
-        return img, label
+        pose = pose[:,0]
+        pose = torch.from_numpy(pose)
+        return img, pose
         
         
 # Dataset class for loading velodyne pointcloud data to tensor    
 # convert pointcloud data to tensor
 # data is stored in binary file
 class KittiPCLDataset(Dataset):
-    def __init__(self, sequence="00", range = 120, transform=None, data_augementation=False):
+    def __init__(self, sequence="00", max_range = 120, path = "/home/plnm/biloCNN/kitti"):
         self.sequence = sequence
-        self.range = range
-        self.transform = transform
-        self.data_augementation = data_augementation
+        self.range = max_range
         
-        self.velodyne_path = "/home/bilal/Desktop/project/velodyne_points/data/*.bin"
-        self.poses_path = "/home/bilal/Desktop/project/data_odometry_poses/dataset/poses/" + sequence + ".txt"
+        self.dataset = pykitti.odometry(self.path, self.sequence)
+
+        self.poses = []
         
-        self.data = []
-        self.label = []
-        
-        self.load_data()
+        self.load_poses()
     
-    def load_data(self):
-        for velodyne in sorted(glob.glob(self.velodyne_path)):
-            self.data.append(velodyne)
+    def load_poses(self):
+        for line in self.dataset.poses:
+            for i in range(3):
+                for j in range(4):
+                    self.homogenous_matrix[i][j] = line[i*4+j]
             
+            for i in range(3):
+                for j in range(3):
+                    self.rotation_matrix[i][j] = self.homogenous_matrix[i][j]
+            
+            for i in range(3):
+                self.translation_matrix[i][0] = self.homogenous_matrix[i][3]
+                
+            euler_angles = cv2.Rodrigues(self.rotation_matrix)[0]
+            self.poses.append(np.concatenate((self.translation_matrix, euler_angles), axis=0))
+    
     def __len__(self):
-        return len(self.data)
+        return len(self.dataset)
     
     
     # convert pointcloud data to tensor
@@ -132,47 +128,56 @@ class KittiPCLDataset(Dataset):
     # thin the pointcloud to 1/10
     # drop the intensity
     def __getitem__(self, index):
-        if index >= len(self.data):
+        if index >= len(self.dataset):
             raise IndexError("Index out of range")
         elif index < 0:
             raise IndexError("Index out of range")
-        elif index == len(self.data) - 1:
-            index = len(self.data) - 2
+        elif index == len(self.dataset) - 1:
+            index = len(self.dataset) - 2
         
-        velodyne1 = self.data[index]
-        velodyne2 = self.data[index+1]
+        # get pointcloud data
+        pcl1 = self.dataset.get_velo(index)[:,:3]
+        pcl2 = self.dataset.get_velo(index+1)[:,:3]
         
-        size_float = 4
-        list_pcd1 = []
-        with open(velodyne1, "rb") as f:
-            byte = f.read(size_float * 4)
-            while byte:
-                x,y,z,intensity = struct.unpack("ffff", byte)
-                list_pcd1.append([x,y,z])
-                byte = f.read(size_float * 4)
-        np_pcd = np.asarray(list_pcd1)
+        # convert pcd to pointcloud
         pcd1 = geometry.PointCloud()
-        pcd1.points = utility.Vector3dVector(np_pcd)
+        pcd1.points = utility.Vector3dVector(pcl1)
         
-        list_pcd2 = []
-        with open(velodyne2, "rb") as f:
-            byte = f.read(size_float * 4)
-            while byte:
-                x,y,z,intensity = struct.unpack("ffff", byte)
-                list_pcd2.append([x,y,z])
-                byte = f.read(size_float * 4)
-        np_pcd = np.asarray(list_pcd2)
         pcd2 = geometry.PointCloud()
-        pcd2.points = utility.Vector3dVector(np_pcd)
+        pcd2.points = utility.Vector3dVector(pcl2)
         
-        pcd1 = pcd1.voxel_down_sample(voxel_size=0.48)
-        pcd2 = pcd2.voxel_down_sample(voxel_size=0.48)
+        # compress the pointcloud to 13000-14000 points
+        # for pcd1
+        coeff = 0.4
+        temp_pcd = pcd1.voxel_down_sample(voxel_size=coeff)
+        size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
+        while size < 13000 or size > 14000:
+            if size < 13000:
+                coeff = coeff - 0.01
+            else:
+                coeff = coeff + 0.01
+            temp_pcd = pcd1.voxel_down_sample(voxel_size=coeff)
+            size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
+        pcd1 = temp_pcd
+        
+        # for pcd2
+        temp_pcd = pcd2.voxel_down_sample(voxel_size=coeff)
+        size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
+        while size < 13000 or size > 14000:
+            if size < 13000:
+                coeff = coeff - 0.01
+            else:
+                coeff = coeff + 0.01
+            temp_pcd = pcd2.voxel_down_sample(voxel_size=coeff)
+            size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
+        pcd2 = temp_pcd
+        
+        # pcd1 = pcd1.voxel_down_sample(voxel_size=0.48)
+        # pcd2 = pcd2.voxel_down_sample(voxel_size=0.48)
         
         # convert pointcloud to numpy array
         pcd1 = np.asarray(pcd1.points, dtype=np.float32)
         pcd2 = np.asarray(pcd2.points, dtype=np.float32)
-        print(pcd1.shape)
-        print(pcd2.shape)
         
         # normalize pointcloud
         pcd1 = pcd1 / self.range
@@ -184,21 +189,155 @@ class KittiPCLDataset(Dataset):
         pcd2 = pcd2[:13000,:]
         pcd1 = np.transpose(pcd1, (1, 0))
         pcd2 = np.transpose(pcd2, (1, 0))
-        print(pcd1.shape)
-        print(pcd2.shape)
-
+        
         # # concatenate pointcloud
         pcd = np.concatenate((pcd1, pcd2), axis=0)
         pcd = torch.from_numpy(pcd)
-        print(pcd.shape)
         
-        return pcd
+        pose1 = self.poses[idx]
+        pose2 = self.poses[idx+1]
         
+        # subtract label2 from label1
+        pose = pose2 - pose1
+        
+        # drop last dimension
+        pose = pose[:,0]
+        pose = torch.from_numpy(pose)
+        
+        return pcd, pose
+        
+class KittiDataset(Dataset):
+    def __init__(self, sequence="00", max_range = 120, path="/home/plnm/biloCNN/kitti"):
+        self.sequence = sequence
+        self.range = max_range
+        self.path = path
+        
+        self.dataset = pykitti.odometry(self.path, self.sequence)
+        self.poses = []
+        
+        self.homogenous_matrix = np.zeros((4, 4), dtype=np.float)
+        self.rotation_matrix = np.zeros((3, 3), dtype=np.float)
+        self.translation_matrix = np.zeros((3, 1), dtype=np.float)
+        
+        self.load_poses()
+    
+    def __len__(self):
+        return len(self.dataset)
+    
+    def load_poses(self):
+        
+        for pose in self.dataset.poses:
             
+            for i in range(3):
+                for j in range(4):
+                    self.homogenous_matrix[i][j] = line[i*4+j]
+            
+            for i in range(3):
+                for j in range(3):
+                    self.rotation_matrix[i][j] = self.homogenous_matrix[i][j]
+            
+            for i in range(3):
+                self.translation_matrix[i][0] = self.homogenous_matrix[i][3]
+
+            euler_angles = cv2.Rodrigues(self.rotation_matrix)[0]
+            # print(euler_angles.shape)
+            # concatenate translation and rotation
+            self.poses.append(np.concatenate((self.translation_matrix, euler_angles), axis=0))
+    
+    def __getitem__(self, index):
+        if index >= len(self.dataset):
+            raise IndexError("Index out of range")
+        elif index < 0:
+            raise IndexError("Index out of range")
+        elif index == len(self.dataset) - 1:
+            index = len(self.dataset) - 2
+        
+        # get consecutive frames of images from the dataset
+        img1 = self.dataset.cam2_files(index)
+        img2 = self.dataset.cam2_files(index+1)
+        
+        img1 = cv2.imread(img1)
+        img2 = cv2.imread(img2)
+        
+        # concatenate images
+        img = np.concatenate((img1, img2), axis=2)
+        img = cv2.resize(img, (224, 224))
+        img = np.transpose(img, (2, 0, 1))
+        img = img.astype(np.float32)
+        img = img / 255.0
+        img = torch.from_numpy(img)
+        
+        
+        # get pointcloud data
+        pcl1 = self.dataset.get_velo(index)[:,:3]
+        pcl2 = self.dataset.get_velo(index+1)[:,:3]
+        
+        # convert pcd to pointcloud
+        pcd1 = geometry.PointCloud()
+        pcd1.points = utility.Vector3dVector(pcl1)
+        
+        pcd2 = geometry.PointCloud()
+        pcd2.points = utility.Vector3dVector(pcl2)
+        
+        # compress the pointcloud to 13000-14000 points
+        # for pcd1
+        coeff = 0.4
+        temp_pcd = pcd1.voxel_down_sample(voxel_size=coeff)
+        size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
+        while size < 13000 or size > 14000:
+            if size < 13000:
+                coeff = coeff - 0.01
+            else:
+                coeff = coeff + 0.01
+            temp_pcd = pcd1.voxel_down_sample(voxel_size=coeff)
+            size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
+        pcd1 = temp_pcd
+        
+        # for pcd2
+        temp_pcd = pcd2.voxel_down_sample(voxel_size=coeff)
+        size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
+        while size < 13000 or size > 14000:
+            if size < 13000:
+                coeff = coeff - 0.01
+            else:
+                coeff = coeff + 0.01
+            temp_pcd = pcd2.voxel_down_sample(voxel_size=coeff)
+            size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
+        pcd2 = temp_pcd
+        
+        pcd1 = np.asarray(pcd1.points, dtype=np.float32)
+        pcd2 = np.asarray(pcd2.points, dtype=np.float32)
+        
+        # normalize pointcloud
+        pcd1 = pcd1 / self.range
+        pcd2 = pcd2 / self.range
+        
+        # resize pointcloud to 13000,3
+        pcd1 = pcd1[:13000,:]
+        pcd2 = pcd2[:13000,:]
+        pcd1 = np.transpose(pcd1, (1, 0))
+        pcd2 = np.transpose(pcd2, (1, 0))
+        
+        pcd = np.concatenate((pcd1, pcd2), axis=0)
+        pcd = torch.from_numpy(pcd)
+        
+        pose1 = self.poses[index]
+        pose2 = self.poses[index+1]
+        
+        # subtract pose2 from pose1
+        pose = pose2 - pose1
+        
+        # drop last dimension
+        pose = pose[:,0]
+        pose = torch.from_numpy(pose)
+        
+        return img, pcd, pose
+        
+        
 if __name__ == "__main__":
-    dataset = KittiPCLDataset()
-    img = dataset[1]
-    print(img.shape)
+    img = KittiIMGDataset()
+    pcl = KittiPCLDataset()
+    both = KittiDataset()
     
     
         
