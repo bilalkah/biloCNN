@@ -1,6 +1,6 @@
 from Models.model import Model
 from CameraCNN import CameraCNN
-from Dataset.dataset import KittiDataset
+from Dataset.dataset import KittiIMGDataset
 from Loss.loss import DOF6Loss
 
 import torch
@@ -76,8 +76,8 @@ if __name__ == '__main__':
         CameraCNN(in_channels=6),
         'cuda' if torch.cuda.is_available() else 'cpu'
     )
-
-    model.load_weight("CameraCNN_04_0.08176152496159089")
+    model.folder("camera_weights/")
+    # model.load_weight("CameraCNN_04_0.08176152496159089")
     opti = optim.Adam(model.model.parameters(), lr=0.001)
     model.train_loss = []
     model.train(train_loader02,train_loader02,epochs=epoch,batch_size=batch,lr=0.001,optimizer=optim.Adam(model.model.parameters(), lr=0.001),criterion=DOF6Loss(size_average=True),save_name='CameraCNN',sequence="02")

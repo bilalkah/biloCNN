@@ -35,10 +35,10 @@ class KittiIMGDataset(Dataset):
 
     def load_poses(self):
         
-        for line in self.dataset.poses:
+        for pose in self.dataset.poses:
             for i in range(3):
                 for j in range(4):
-                    self.homogenous_matrix[i][j] = line[i*4+j]
+                    self.homogenous_matrix[i][j] = pose[i][j]
             
             for i in range(3):
                 for j in range(3):
@@ -92,18 +92,22 @@ class KittiPCLDataset(Dataset):
     def __init__(self, sequence="00", max_range = 120, path = "/home/plnm/biloCNN/kitti"):
         self.sequence = sequence
         self.range = max_range
-        
+        self.path = path
         self.dataset = pykitti.odometry(self.path, self.sequence)
+
+        self.homogenous_matrix = np.zeros((4, 4), dtype=np.float)
+        self.rotation_matrix = np.zeros((3, 3), dtype=np.float)
+        self.translation_matrix = np.zeros((3, 1), dtype=np.float)
 
         self.poses = []
         
         self.load_poses()
     
     def load_poses(self):
-        for line in self.dataset.poses:
+        for pose in self.dataset.poses:
             for i in range(3):
                 for j in range(4):
-                    self.homogenous_matrix[i][j] = line[i*4+j]
+                    self.homogenous_matrix[i][j] = pose[i][j]
             
             for i in range(3):
                 for j in range(3):
@@ -151,7 +155,7 @@ class KittiPCLDataset(Dataset):
         coeff = 0.4
         temp_pcd = pcd1.voxel_down_sample(voxel_size=coeff)
         size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
-        while size < 13000 or size > 14000:
+        while size < 13000 or size > 14500:
             if size < 13000:
                 coeff = coeff - 0.01
             else:
@@ -163,7 +167,7 @@ class KittiPCLDataset(Dataset):
         # for pcd2
         temp_pcd = pcd2.voxel_down_sample(voxel_size=coeff)
         size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
-        while size < 13000 or size > 14000:
+        while size < 13000 or size > 14500:
             if size < 13000:
                 coeff = coeff - 0.01
             else:
@@ -194,8 +198,8 @@ class KittiPCLDataset(Dataset):
         pcd = np.concatenate((pcd1, pcd2), axis=0)
         pcd = torch.from_numpy(pcd)
         
-        pose1 = self.poses[idx]
-        pose2 = self.poses[idx+1]
+        pose1 = self.poses[index]
+        pose2 = self.poses[index+1]
         
         # subtract label2 from label1
         pose = pose2 - pose1
@@ -230,7 +234,7 @@ class KittiDataset(Dataset):
             
             for i in range(3):
                 for j in range(4):
-                    self.homogenous_matrix[i][j] = line[i*4+j]
+                    self.homogenous_matrix[i][j] = pose[i][j]
             
             for i in range(3):
                 for j in range(3):
@@ -253,8 +257,8 @@ class KittiDataset(Dataset):
             index = len(self.dataset) - 2
         
         # get consecutive frames of images from the dataset
-        img1 = self.dataset.cam2_files(index)
-        img2 = self.dataset.cam2_files(index+1)
+        img1 = self.dataset.cam2_files[index]
+        img2 = self.dataset.cam2_files[index+1]
         
         img1 = cv2.imread(img1)
         img2 = cv2.imread(img2)
@@ -284,7 +288,7 @@ class KittiDataset(Dataset):
         coeff = 0.4
         temp_pcd = pcd1.voxel_down_sample(voxel_size=coeff)
         size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
-        while size < 13000 or size > 14000:
+        while size < 13000 or size > 14500:
             if size < 13000:
                 coeff = coeff - 0.01
             else:
@@ -296,7 +300,7 @@ class KittiDataset(Dataset):
         # for pcd2
         temp_pcd = pcd2.voxel_down_sample(voxel_size=coeff)
         size = np.asarray(temp_pcd.points, dtype=np.float32).shape[0]
-        while size < 13000 or size > 14000:
+        while size < 13000 or size > 14500:
             if size < 13000:
                 coeff = coeff - 0.01
             else:

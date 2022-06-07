@@ -3,9 +3,10 @@ import numpy as np
 import tqdm
 from time import sleep
 import torchmetrics
+import os
 
 class Model():
-    def __init__(self,model,device):
+    def __init__(self,model,device,folder="weights/"):
         self.model = model
         self.device = device
         self.model.to(device)
@@ -14,8 +15,9 @@ class Model():
         self.val_loss = []
         self.val_acc = []
         self.metric = torchmetrics.Accuracy().to(device)
+        self.folder = folder
         
-    def train(self,train_loader,val_loader,epochs,batch_size,lr,optimizer,criterion,save_name):
+    def train(self,train_loader,val_loader,epochs,batch_size,lr,optimizer,criterion,save_name,sequence):
         for epoch in range(epochs):
             with tqdm.tqdm(train_loader,unit="batch") as tepoch:
                 tepoch.set_description(f"Epoch {epoch}")
@@ -57,7 +59,7 @@ class Model():
                 # self.val_loss.append(np.mean(epoch_val_loss))
                 # self.val_acc.append(np.mean(epoch_val_acc))
                 self.train_loss.append(np.mean(epoch_loss))
-                self.save_weight(name=save_name+str(self.train_loss[-1]))
+                self.save_weight(name=save_name+"_"+sequence+"_"+str(self.train_loss[-1]))
                 # self.train_acc.append(np.mean(epoch_acc))
                 
                 # if self.val_acc[len(self.val_acc)-1] > 0.5 and np.argmax(np.asarray(self.val_acc)) == len(self.val_acc)-1:
@@ -84,10 +86,10 @@ class Model():
             print(f"Evaluate avg acc: {sum(epoch_acc)/len(epoch_acc)}")
     
     def save_weight(self,name):
-        torch.save(self.model.state_dict(),"weights/"+name+".pth")
+        torch.save(self.model.state_dict(),self.folder+name+".pth")
     
     def load_weight(self,name):
-        self.model.load_state_dict(torch.load("weights/"+name+".pth"))
+        self.model.load_state_dict(torch.load(self.folder+name+".pth"))
         
     def get_train_data(self):
         return (self.train_loss,self.train_acc)
