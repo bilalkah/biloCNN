@@ -27,29 +27,23 @@ class KittiIMGDataset(Dataset):
         
         self.poses = []
         
-        self.homogenous_matrix = np.zeros((4, 4), dtype=np.float)
-        self.rotation_matrix = np.zeros((3, 3), dtype=np.float)
-        self.translation_matrix = np.zeros((3, 1), dtype=np.float)
+        # self.homogenous_matrix = np.zeros((4, 4), dtype=np.float)
+        # self.rotation_matrix = np.zeros((3, 3), dtype=np.float)
+        # self.translation_matrix = np.zeros((3, 1), dtype=np.float)
         
         self.load_poses()
 
     def load_poses(self):
         
         for pose in self.dataset.poses:
+            homogenous_matrix = np.zeros((4, 4), dtype=np.float)
             for i in range(3):
                 for j in range(4):
-                    self.homogenous_matrix[i][j] = pose[i][j]
+                    homogenous_matrix[i][j] = pose[i][j]
             
-            for i in range(3):
-                for j in range(3):
-                    self.rotation_matrix[i][j] = self.homogenous_matrix[i][j]
+            homogenous_matrix[3][3] = 1
             
-            for i in range(3):
-                self.translation_matrix[i][0] = self.homogenous_matrix[i][3]
-                
-            euler_angles = cv2.Rodrigues(self.rotation_matrix)[0]
-            self.poses.append(np.concatenate((self.translation_matrix, euler_angles), axis=0))
-
+            self.poses.append(homogenous_matrix)
         
     def __len__(self):
         return len(self.dataset)
@@ -73,16 +67,39 @@ class KittiIMGDataset(Dataset):
         img = img / 255.0
         img = torch.from_numpy(img)
         
-        pose1 = self.poses[idx]
-        pose2 = self.poses[idx+1]
+        previous = self.poses[idx]
+        current = self.poses[idx+1]
         
-        # subtract label2 from label1
-        pose = pose2 - pose1
+        rotation_prev = previous[:3, :3]
+        translation_prev = previous[:3, 3]
         
+        rotation_current = current[:3, :3]
+        translation_current = current[:3, 3]
+        
+        rotation = np.dot(rotation_prev.T, rotation_current)
+        translation = np.dot(rotation_prev.T, translation_current) - np.dot(rotation_prev.T, translation_prev)
+        
+        rotation_angles = cv2.Rodrigues(rotation)[0]
+        # convert rotation angles shape from (3,1) to (3,)
+        rotation_angles = rotation_angles.reshape(3)
+        
+        # print(rotation_angles.shape)
+        # print(translation, rotation_angles)
+        odometry = np.concatenate((translation, rotation_angles), axis=0)
+        signs = np.zeros(odometry.shape)
+        for i in range(odometry.shape[0]):
+            if odometry[i] > 0:
+                signs[i] = 1
+        
+        # concatenate odometry and signs
+        odometry = np.concatenate((odometry, signs), axis=0)
+        odometry = np.reshape(odometry, (2, 6))
+        # print(odometry.shape)
+            
+        # print(odometry)
         # drop last dimension
-        pose = pose[:,0]
-        pose = torch.from_numpy(pose)
-        return img, pose
+        odometry = torch.from_numpy(odometry)
+        return img, odometry
         
         
 # Dataset class for loading velodyne pointcloud data to tensor    
@@ -95,29 +112,20 @@ class KittiPCLDataset(Dataset):
         self.path = path
         self.dataset = pykitti.odometry(self.path, self.sequence)
 
-        self.homogenous_matrix = np.zeros((4, 4), dtype=np.float)
-        self.rotation_matrix = np.zeros((3, 3), dtype=np.float)
-        self.translation_matrix = np.zeros((3, 1), dtype=np.float)
-
         self.poses = []
         
         self.load_poses()
     
     def load_poses(self):
         for pose in self.dataset.poses:
+            homogenous_matrix = np.zeros((4, 4), dtype=np.float)
             for i in range(3):
                 for j in range(4):
-                    self.homogenous_matrix[i][j] = pose[i][j]
+                    homogenous_matrix[i][j] = pose[i][j]
             
-            for i in range(3):
-                for j in range(3):
-                    self.rotation_matrix[i][j] = self.homogenous_matrix[i][j]
+            homogenous_matrix[3][3] = 1
             
-            for i in range(3):
-                self.translation_matrix[i][0] = self.homogenous_matrix[i][3]
-                
-            euler_angles = cv2.Rodrigues(self.rotation_matrix)[0]
-            self.poses.append(np.concatenate((self.translation_matrix, euler_angles), axis=0))
+            self.poses.append(homogenous_matrix)
     
     def __len__(self):
         return len(self.dataset)
@@ -198,17 +206,38 @@ class KittiPCLDataset(Dataset):
         pcd = np.concatenate((pcd1, pcd2), axis=0)
         pcd = torch.from_numpy(pcd)
         
-        pose1 = self.poses[index]
-        pose2 = self.poses[index+1]
+        previous = self.poses[idx]
+        current = self.poses[idx+1]
         
-        # subtract label2 from label1
-        pose = pose2 - pose1
+        rotation_prev = previous[:3, :3]
+        translation_prev = previous[:3, 3]
         
+        rotation_current = current[:3, :3]
+        translation_current = current[:3, 3]
+        
+        rotation = np.dot(rotation_prev.T, rotation_current)
+        translation = np.dot(rotation_prev.T, translation_current) - np.dot(rotation_prev.T, translation_prev)
+        
+        rotation_angles = cv2.Rodrigues(rotation)[0]
+        # convert rotation angles shape from (3,1) to (3,)
+        rotation_angles = rotation_angles.reshape(3)
+        
+        # print(rotation_angles.shape)
+        # print(translation, rotation_angles)
+        odometry = np.concatenate((translation, rotation_angles), axis=0)
+        signs = np.zeros(odometry.shape)
+        for i in range(odometry.shape[0]):
+            if odometry[i] > 0:
+                signs[i] = 1
+        
+        # concatenate odometry and signs
+        odometry = np.concatenate((odometry, signs), axis=0)
+        odometry = np.reshape(odometry, (2, 6))
+        
+        # print(odometry)
         # drop last dimension
-        pose = pose[:,0]
-        pose = torch.from_numpy(pose)
-        
-        return pcd, pose
+        odometry = torch.from_numpy(odometry)
+        return pcd, odometry
         
 class KittiDataset(Dataset):
     def __init__(self, sequence="00", max_range = 120, path="/home/plnm/biloCNN/kitti"):
@@ -219,10 +248,6 @@ class KittiDataset(Dataset):
         self.dataset = pykitti.odometry(self.path, self.sequence)
         self.poses = []
         
-        self.homogenous_matrix = np.zeros((4, 4), dtype=np.float)
-        self.rotation_matrix = np.zeros((3, 3), dtype=np.float)
-        self.translation_matrix = np.zeros((3, 1), dtype=np.float)
-        
         self.load_poses()
     
     def __len__(self):
@@ -231,22 +256,15 @@ class KittiDataset(Dataset):
     def load_poses(self):
         
         for pose in self.dataset.poses:
-            
+            for pose in self.dataset.poses:
+                homogenous_matrix = np.zeros((4, 4), dtype=np.float)
             for i in range(3):
                 for j in range(4):
-                    self.homogenous_matrix[i][j] = pose[i][j]
+                    homogenous_matrix[i][j] = pose[i][j]
             
-            for i in range(3):
-                for j in range(3):
-                    self.rotation_matrix[i][j] = self.homogenous_matrix[i][j]
+            homogenous_matrix[3][3] = 1
             
-            for i in range(3):
-                self.translation_matrix[i][0] = self.homogenous_matrix[i][3]
-
-            euler_angles = cv2.Rodrigues(self.rotation_matrix)[0]
-            # print(euler_angles.shape)
-            # concatenate translation and rotation
-            self.poses.append(np.concatenate((self.translation_matrix, euler_angles), axis=0))
+            self.poses.append(homogenous_matrix)
     
     def __getitem__(self, index):
         if index >= len(self.dataset):
@@ -325,17 +343,38 @@ class KittiDataset(Dataset):
         pcd = np.concatenate((pcd1, pcd2), axis=0)
         pcd = torch.from_numpy(pcd)
         
-        pose1 = self.poses[index]
-        pose2 = self.poses[index+1]
+        previous = self.poses[idx]
+        current = self.poses[idx+1]
         
-        # subtract pose2 from pose1
-        pose = pose2 - pose1
+        rotation_prev = previous[:3, :3]
+        translation_prev = previous[:3, 3]
         
+        rotation_current = current[:3, :3]
+        translation_current = current[:3, 3]
+        
+        rotation = np.dot(rotation_prev.T, rotation_current)
+        translation = np.dot(rotation_prev.T, translation_current) - np.dot(rotation_prev.T, translation_prev)
+        
+        rotation_angles = cv2.Rodrigues(rotation)[0]
+        # convert rotation angles shape from (3,1) to (3,)
+        rotation_angles = rotation_angles.reshape(3)
+        
+        # print(rotation_angles.shape)
+        # print(translation, rotation_angles)
+        odometry = np.concatenate((translation, rotation_angles), axis=0)
+        signs = np.zeros(odometry.shape)
+        for i in range(odometry.shape[0]):
+            if odometry[i] > 0:
+                signs[i] = 1
+        
+        # concatenate odometry and signs
+        odometry = np.concatenate((odometry, signs), axis=0)
+        odometry = np.reshape(odometry, (2, 6))
+        
+        # print(odometry)
         # drop last dimension
-        pose = pose[:,0]
-        pose = torch.from_numpy(pose)
-        
-        return img, pcd, pose
+        odometry = torch.from_numpy(odometry)
+        return img, pcd, odometry
         
         
 if __name__ == "__main__":

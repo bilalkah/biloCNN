@@ -21,54 +21,63 @@ train_dataset10 = KittiIMGDataset(sequence="10")
 train_loader10 = DataLoader(
     dataset=train_dataset10,
     batch_size=batch,
+    shuffle=True,
 )
 
 train_dataset09 = KittiIMGDataset(sequence="09")
 train_loader09 = DataLoader(
     dataset=train_dataset09,
     batch_size=batch,
+    shuffle=True,
 )
 
 train_dataset08 = KittiIMGDataset(sequence="08")
 train_loader08 = DataLoader(
     dataset=train_dataset08,
     batch_size=batch,
+    shuffle=True,
 )
 
 train_dataset07 = KittiIMGDataset(sequence="07")
 train_loader07 = DataLoader(
     dataset=train_dataset07,
     batch_size=batch,
+    shuffle=True,
 )
 
 train_dataset06 = KittiIMGDataset(sequence="06")
 train_loader06 = DataLoader(
     dataset=train_dataset06,
     batch_size=batch,
+    shuffle=True,
 )
 
 train_dataset05 = KittiIMGDataset(sequence="05")
 train_loader05 = DataLoader(
     dataset=train_dataset05,
     batch_size=batch,
+    shuffle=True,
 )
 
 train_dataset04 = KittiIMGDataset(sequence="04")
 train_loader04 = DataLoader(
     dataset=train_dataset04,
     batch_size=batch,
+    shuffle=True,
 )
 
 train_dataset03 = KittiIMGDataset(sequence="03")
 train_loader03 = DataLoader(
     dataset=train_dataset03,
     batch_size=batch,
+    shuffle=True,
 )
 
 train_dataset02 = KittiIMGDataset(sequence="02")
 train_loader02 = DataLoader(
     dataset=train_dataset02,
     batch_size=batch,
+    shuffle=True,
 )
 
 if __name__ == '__main__':

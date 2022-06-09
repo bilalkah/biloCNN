@@ -18,7 +18,7 @@ class Regressor(nn.Module):
                 nn.Linear(in_cha, middle_channels)
             )
             regressor.append(
-                nn.LeakyReLU(0.1)
+                nn.ReLU()
             )
             in_cha = middle_channels
         

@@ -36,12 +36,12 @@ class LidarCNN(nn.Module):
         
         self.translationNet = Regressor(
             in_channels=1280,
-            out_channels=translation,
+            out_channels=2*translation,
         )
         
         self.rotationNet = Regressor(
             in_channels=1280,
-            out_channels=rotation,
+            out_channels=2*rotation,
         )
         
         self.init_weights()
@@ -82,7 +82,11 @@ class LidarCNN(nn.Module):
         self.ft = self.featureNet(x).view(x.size(0),-1)
         translation = self.translationNet(self.ft)
         rotation = self.rotationNet(self.ft)
-        return torch.cat((translation, rotation), dim=1)
+        
+        translation = translation.view(-1,2,3)
+        rotation = rotation.view(-1,2,3)
+        
+        return torch.cat((translation, rotation), dim=2)
     
     
 if __name__ == '__main__':
