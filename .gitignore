@@ -18,3 +18,5 @@ velodyne_points/
 *.ply
 noktalar/
 kitti/
+lidar_weights*
+camera_weights*
