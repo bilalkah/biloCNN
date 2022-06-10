@@ -1,5 +1,5 @@
 from Models.model import Model
-from LidarCNN import LidarCNN
+from FusionCNN import FusionCNN
 from Dataset.dataset import *
 from Loss.loss import DOF6Loss
 
@@ -17,8 +17,8 @@ torch.cuda.memory_summary(device=None,abbreviated=False)
 batch = 32
 epoch = 30
 
-train_dataset = KittiPCLAllDataset(sequence=["02","03","04","05","06","07","08","09","10"])
-# train_dataset = KittiPCLDataset("03")
+train_dataset = KittiAllDataset(sequence=["02","03","04","05","06","07","08","09","10"])
+# train_dataset = KittiIMGDataset("03")
 train_loader = DataLoader(
     dataset=train_dataset,
     batch_size=batch,
@@ -26,7 +26,7 @@ train_loader = DataLoader(
     num_workers=4
 )
 
-validation_dataset = KittiPCLDataset("01")
+validation_dataset = KittiDataset("01")
 val_loader = DataLoader(
     dataset=validation_dataset,
     batch_size=batch//2,
@@ -38,10 +38,10 @@ val_loader = DataLoader(
 
 if __name__ == '__main__':
     model = Model(
-        LidarCNN(in_channels=6),
+        FusionCNN(in_channels=6),
         'cuda' if torch.cuda.is_available() else 'cpu'
     )
-    model.folder="lidar_weights/"
+    model.folder="fusion_weights/"
     opti = optim.Adam(model.model.parameters(), lr=0.001)
 
     model.train(
@@ -52,9 +52,9 @@ if __name__ == '__main__':
         lr=0.001,
         optimizer=optim.Adam(model.model.parameters(), lr=0.001),
         criterion=DOF6Loss(size_average=True),
-        save_name='LidarCNN',
+        save_name='FusionCNN',
         sequence="all"
     )
     
-    model.save_weight('LidarCNN')
+    model.save_weight('FusionCNN')
 

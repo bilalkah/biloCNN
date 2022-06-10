@@ -12,7 +12,7 @@ import pykitti
 
 
 class KittiIMGAllDataset(Dataset):
-    def __init__(self, sequence=["00"], path = "/home/bilal/Desktop/project/data_odometry_color/dataset"):
+    def __init__(self, sequence=["00"], path = "/home/plnm/biloCNN/kitti"):
         self.sequence = sequence
         self.path = path
         self.dataset = []
@@ -118,7 +118,7 @@ class KittiIMGAllDataset(Dataset):
 # Data will be consecutive images and label will be calculated as the difference between consecutive poses
 
 class KittiIMGDataset(Dataset):
-    def __init__(self, sequence="00", path = "/home/bilal/Desktop/project/data_odometry_color/dataset"):
+    def __init__(self, sequence="00", path = "/home/plnm/biloCNN/kitti"):
         self.sequence = sequence
         self.path = path
         
@@ -203,10 +203,11 @@ class KittiIMGDataset(Dataset):
         
 
 class KittiPCLAllDataset(Dataset):
-    def __init__(self, sequence=["00"], max_range = 120, path = "/home/bilal/Desktop/project/data_odometry_color/dataset"):
+    def __init__(self, sequence=["00"], max_range = 120, path = "/home/plnm/biloCNN/kitti"):
         self.sequence = sequence
         self.path = path
         self.dataset = []
+        self.range = max_range
         
         for seq in self.sequence:
             self.dataset.append(pykitti.odometry(self.path, seq))
@@ -453,8 +454,8 @@ class KittiPCLDataset(Dataset):
         pcd = np.concatenate((pcd1, pcd2), axis=0)
         pcd = torch.from_numpy(pcd)
         
-        previous = self.poses[idx]
-        current = self.poses[idx+1]
+        previous = self.poses[index]
+        current = self.poses[index+1]
         
         rotation_prev = previous[:3, :3]
         translation_prev = previous[:3, 3]
@@ -494,10 +495,11 @@ class KittiPCLDataset(Dataset):
         
         
 class KittiAllDataset(Dataset):
-    def __init__(self, sequence=["00"], max_range = 120, path = "/home/bilal/Desktop/project/data_odometry_color/dataset"):
+    def __init__(self, sequence=["00"], max_range = 120, path = "/home/plnm/biloCNN/kitti"):
         self.sequence = sequence
         self.path = path
         self.dataset = []
+        self.range = max_range
         
         for seq in self.sequence:
             self.dataset.append(pykitti.odometry(self.path, seq))
@@ -755,8 +757,8 @@ class KittiDataset(Dataset):
         pcd = np.concatenate((pcd1, pcd2), axis=0)
         pcd = torch.from_numpy(pcd)
         
-        previous = self.poses[idx]
-        current = self.poses[idx+1]
+        previous = self.poses[index]
+        current = self.poses[index+1]
         
         rotation_prev = previous[:3, :3]
         translation_prev = previous[:3, 3]

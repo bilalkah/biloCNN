@@ -83,10 +83,7 @@ class LidarCNN(nn.Module):
         translation = self.translationNet(self.ft)
         rotation = self.rotationNet(self.ft)
         
-        translation = translation.view(-1,2,3)
-        rotation = rotation.view(-1,2,3)
-        
-        return torch.cat((translation, rotation), dim=2)
+        return torch.cat((translation, rotation), dim=1)
     
     
 if __name__ == '__main__':

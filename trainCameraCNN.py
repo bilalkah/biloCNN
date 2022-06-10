@@ -34,7 +34,7 @@ val_loader = DataLoader(
 )
 
 
-torch.autograd.set_detect_anomaly(True)
+# torch.autograd.set_detect_anomaly(True)
 
 if __name__ == '__main__':
     model = Model(

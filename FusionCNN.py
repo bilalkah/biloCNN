@@ -33,12 +33,12 @@ class FusionCNN(nn.Module):
         
         self.translationNet = Regressor(
             in_channels=1280,
-            out_channels=translation,
+            out_channels=2*translation,
         )
         
         self.rotationNet = Regressor(
             in_channels=1280,
-            out_channels=rotation,
+            out_channels=2*rotation,
         )
             
         if LidarCNNweight is not None:
@@ -77,25 +77,25 @@ class FusionCNN(nn.Module):
         cameraOut = cameraOut.unsqueeze(1)
         LidarOut = LidarOut.unsqueeze(1)
         
-        print("cameraOut: ", cameraOut.shape)
-        print("LidarOut: ", LidarOut.shape)
+        # print("cameraOut: ", cameraOut.shape)
+        # print("LidarOut: ", LidarOut.shape)
         
         
         fusionOut = torch.cat((cameraOut, LidarOut), dim=1)
-        print("before fusion: ", fusionOut.shape)
+        # print("before fusion: ", fusionOut.shape)
         fusionOut = self.fusion(fusionOut)
-        print("after fusion: ", fusionOut.shape)
+        # print("after fusion: ", fusionOut.shape)
         
         # reduce dimension
         fusionOut = fusionOut.squeeze(1)
-        print("drop dimension fusion: ", fusionOut.shape)
+        # print("drop dimension fusion: ", fusionOut.shape)
         
         translation = self.translationNet(fusionOut)
         rotation = self.rotationNet(fusionOut)
         
         # concatenate translation and rotation
         out = torch.cat((translation, rotation), dim=1)
-        print("out: ", out.shape)
+        # print("out: ", out.shape)
         
         return out
     
