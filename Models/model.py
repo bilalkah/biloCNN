@@ -2,7 +2,6 @@ import torch
 import numpy as np
 import tqdm
 from time import sleep
-import torchmetrics
 import os
 
 class Model():
@@ -11,29 +10,24 @@ class Model():
         self.device = device
         self.model.to(device)
         self.train_loss = []
-        self.train_acc = []
         self.val_loss = []
-        self.val_acc = []
-        self.metric = torchmetrics.Accuracy().to(device)
         self.folder = folder
         
         
     def train(self,train_loader,val_loader,epochs,batch_size,lr,optimizer,criterion,save_name,sequence):
-        # append mode 
-        self.file = open(save_name+".txt","a")
+        
+        self.file = open(save_name+".txt","w")
         self.file.writelines(f"{sequence}\n")
         for epoch in range(epochs):
             with tqdm.tqdm(train_loader,unit="batch") as tepoch:
                 tepoch.set_description(f"Epoch {epoch}")
                 epoch_loss = []
-                epoch_acc = []
                 
                 for data, target in tepoch:
                     data, target = data.to(self.device), target.to(self.device)
 
                     optimizer.zero_grad()
                     scores = self.model(data)
-            
                     loss = criterion(scores, target)
                     if torch.isnan(loss):
                         continue
@@ -47,7 +41,7 @@ class Model():
                     sleep(0.1)
 
                 self.train_loss.append(np.mean(epoch_loss))
-                self.file.writelines(f"{epoch} {np.mean(epoch_loss)}\n")
+                self.file.writelines(f"{epoch} {self.train_loss[-1]}\n")
                 self.save_weight(name=save_name+"_"+sequence+"_"+str(self.train_loss[-1]))
                 
     def eval(self,test_loader):

@@ -9,7 +9,106 @@ from open3d import *
 import struct
 import pykitti
 
-# import pointcloud library
+
+
+class KittiIMGAllDataset(Dataset):
+    def __init__(self, sequence=["00"], path = "/home/bilal/Desktop/project/data_odometry_color/dataset"):
+        self.sequence = sequence
+        self.path = path
+        self.dataset = []
+        
+        for seq in self.sequence:
+            self.dataset.append(pykitti.odometry(self.path, seq))
+        
+        self.poses = []
+        
+        self.load_poses()
+
+    def load_poses(self):
+        for k in range(len(self.sequence)):
+            img_k = 0
+            for pose in self.dataset[k].poses:
+                homogenous_matrix = np.zeros((4, 4), dtype=np.float)
+                
+                for i in range(3):
+                    for j in range(4):
+                        homogenous_matrix[i][j] = pose[i][j]
+                homogenous_matrix[3][3] = 1
+                
+                self.poses.append([homogenous_matrix,k,img_k])
+                img_k += 1
+                
+        
+    def __len__(self):
+        return len(self.poses)-1
+
+    def __getitem__(self, idx):
+        if idx >= len(self.poses):
+            print(idx)
+            raise IndexError("Index out of range")
+        elif idx < 0:
+            print(idx)
+            raise IndexError("Index out of range")
+        
+        dataset_k = self.poses[idx][1]
+        img_k = self.poses[idx][2]
+        
+        if img_k == len(self.dataset[dataset_k])-1:
+            idx -= 1
+            dataset_k = self.poses[idx][1]
+            img_k = self.poses[idx][2] 
+        
+        img1 = cv2.imread(self.dataset[dataset_k].cam2_files[img_k])
+        img2 = cv2.imread(self.dataset[dataset_k].cam2_files[img_k+1])
+        
+        # concatenate images
+        img = np.concatenate((img1, img2), axis=2)
+        img = cv2.resize(img, (224, 224))
+        img = np.transpose(img, (2, 0, 1))
+        img = img.astype(np.float32)
+        img = img / 255.0
+        img = torch.from_numpy(img)
+        
+        previous = self.poses[idx][0]
+        current = self.poses[idx+1][0]
+        
+        rotation_prev = previous[:3, :3]
+        translation_prev = previous[:3, 3]
+        
+        rotation_current = current[:3, :3]
+        translation_current = current[:3, 3]
+        
+        rotation = np.dot(rotation_prev.T, rotation_current)
+        translation = np.dot(rotation_prev.T, translation_current) - np.dot(rotation_prev.T, translation_prev)
+        
+        rotation_angles = cv2.Rodrigues(rotation)[0]
+        # convert rotation angles shape from (3,1) to (3,)
+        rotation_angles = rotation_angles.reshape(3)
+        
+        rotation_signs = np.ones(3, dtype=np.float)
+        translation_signs = np.ones(3, dtype=np.float)
+        
+        for i in range(translation.shape[0]):
+            if translation[i] < 0:
+                translation_signs[i] = 0
+                translation[i] = -translation[i]
+            if rotation_angles[i] < 0:
+                rotation_signs[i] = 0
+                rotation_angles[i] = -rotation_angles[i]
+        
+        translation = np.concatenate((translation, translation_signs), axis=0)
+        rotation = np.concatenate((rotation_angles, rotation_signs), axis=0)
+        
+        odometry = np.concatenate((translation, rotation), axis=0)
+        
+        # print(odometry.shape)
+        
+        # drop last dimension
+        odometry = torch.from_numpy(odometry)
+        odometry = odometry.type(torch.FloatTensor)
+        return img, odometry
+
+
 
 
 # Dataset class for loading data
@@ -19,17 +118,13 @@ import pykitti
 # Data will be consecutive images and label will be calculated as the difference between consecutive poses
 
 class KittiIMGDataset(Dataset):
-    def __init__(self, sequence="00", path = "/home/plnm/biloCNN/kitti"):
+    def __init__(self, sequence="00", path = "/home/bilal/Desktop/project/data_odometry_color/dataset"):
         self.sequence = sequence
         self.path = path
         
         self.dataset = pykitti.odometry(self.path, self.sequence)
         
         self.poses = []
-        
-        # self.homogenous_matrix = np.zeros((4, 4), dtype=np.float)
-        # self.rotation_matrix = np.zeros((3, 3), dtype=np.float)
-        # self.translation_matrix = np.zeros((3, 1), dtype=np.float)
         
         self.load_poses()
 
@@ -83,22 +178,27 @@ class KittiIMGDataset(Dataset):
         # convert rotation angles shape from (3,1) to (3,)
         rotation_angles = rotation_angles.reshape(3)
         
-        # print(rotation_angles.shape)
-        # print(translation, rotation_angles)
-        odometry = np.concatenate((translation, rotation_angles), axis=0)
-        signs = np.zeros(odometry.shape)
-        for i in range(odometry.shape[0]):
-            if odometry[i] > 0:
-                signs[i] = 1
+        rotation_signs = np.ones(3, dtype=np.float)
+        translation_signs = np.ones(3, dtype=np.float)
         
-        # concatenate odometry and signs
-        odometry = np.concatenate((odometry, signs), axis=0)
-        odometry = np.reshape(odometry, (2, 6))
+        for i in range(translation.shape[0]):
+            if translation[i] < 0:
+                translation_signs[i] = 0
+                translation[i] = -translation[i]
+            if rotation_angles[i] < 0:
+                rotation_signs[i] = 0
+                rotation_angles[i] = -rotation_angles[i]
+        
+        translation = np.concatenate((translation, translation_signs), axis=0)
+        rotation = np.concatenate((rotation_angles, rotation_signs), axis=0)
+        
+        odometry = np.concatenate((translation, rotation), axis=0)
+        
         # print(odometry.shape)
-            
-        # print(odometry)
+        
         # drop last dimension
         odometry = torch.from_numpy(odometry)
+        odometry = odometry.type(torch.FloatTensor)
         return img, odometry
         
         
