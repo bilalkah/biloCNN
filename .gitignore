@@ -20,4 +20,5 @@ noktalar/
 kitti/
 lidar_weights*
 camera_weights*
+fusion_weigths*
 *.txt
