@@ -40,8 +40,17 @@ class Model():
                     tepoch.set_postfix(Train_loss = loss.item())
                     sleep(0.1)
 
+                epoch_val_loss = []
+                
+                for _ ,(data, target) in enumerate(val_loader):
+                    data, target = data.to(self.device), target.to(self.device)
+                    scores = self.model(data)
+                    loss = criterion(scores, target) 
+                    epoch_val_loss.append(loss.item())
+                    
+                self.val_loss.append(np.mean(epoch_val_loss))
                 self.train_loss.append(np.mean(epoch_loss))
-                self.file.writelines(f"{epoch} {self.train_loss[-1]}\n")
+                self.file.writelines(f"{epoch} {self.train_loss[-1]} {self.val_loss[-1]}\n")
                 self.save_weight(name=save_name+"_"+sequence+"_"+str(self.train_loss[-1]))
                 
     def eval(self,test_loader):

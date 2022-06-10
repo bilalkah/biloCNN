@@ -17,7 +17,8 @@ torch.cuda.memory_summary(device=None,abbreviated=False)
 batch = 32
 epoch = 30
 
-train_dataset = KittiIMGAllDataset(sequence=["02","03","04","05","06","07","08","09","10"])
+# train_dataset = KittiIMGAllDataset(sequence=["02","03","04","05","06","07","08","09","10"])
+train_dataset = KittiIMGDataset("03")
 train_loader = DataLoader(
     dataset=train_dataset,
     batch_size=batch,
@@ -44,7 +45,8 @@ if __name__ == '__main__':
     opti = optim.Adam(model.model.parameters(), lr=0.001)
 
     model.train(
-        train_loader,train_loader,
+        train_loader=train_loader,
+        val_loader=val_loader,
         epochs=epoch,
         batch_size=batch,
         lr=0.001,
