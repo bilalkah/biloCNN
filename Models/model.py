@@ -37,7 +37,7 @@ class Model():
                     loss.backward()
                     optimizer.step()
             
-                    tepoch.set_postfix(Train_loss = loss.item())
+                    tepoch.set_postfix(T_loss = loss.item(),V_loss=0)
                     sleep(0.1)
 
                 epoch_val_loss = []
@@ -50,8 +50,10 @@ class Model():
                     
                 self.val_loss.append(np.mean(epoch_val_loss))
                 self.train_loss.append(np.mean(epoch_loss))
+                tepoch.set_postfix(T_loss = self.train_loss[-1], V_loss=self.val_loss[-1])
                 self.file.writelines(f"{epoch} {self.train_loss[-1]} {self.val_loss[-1]}\n")
                 self.save_weight(name=save_name+"_"+sequence+"_"+str(self.train_loss[-1]))
+        self.file.close()
                 
     def eval(self,test_loader):
         with tqdm.tqdm(test_loader,unit="batch") as tepoch:
