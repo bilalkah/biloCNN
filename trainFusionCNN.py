@@ -38,11 +38,19 @@ val_loader = DataLoader(
 
 if __name__ == '__main__':
     model = Model(
-        FusionCNN(in_channels=6),
+        FusionCNN(
+            in_channels=6,
+            LidarCNNweight="lidar_weights/LidarCNN.pth",
+            CameraCNNweight="camera_weights/CameraCNN.pth",
+            frozeLayers=True,
+            ),
         'cuda' if torch.cuda.is_available() else 'cpu'
     )
     model.folder="fusion_weights/"
+    
+    
     opti = optim.Adam(model.model.parameters(), lr=0.001)
+    
 
     model.train(
         train_loader=train_loader,
