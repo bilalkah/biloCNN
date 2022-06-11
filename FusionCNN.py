@@ -42,12 +42,12 @@ class FusionCNN(nn.Module):
         )
             
         if LidarCNNweight is not None:
-            self.lidarCNN.load_state_dict(LidarCNNweight)
+            self.lidarCNN.load_state_dict(torch.load(LidarCNNweight))
         else:
             self.lidarCNN.init_weights()
             
         if CameraCNNweight is not None:
-            self.cameraCNN.load_state_dict(CameraCNNweight)
+            self.cameraCNN.load_state_dict(torch.load(CameraCNNweight))
         else:
             self.cameraCNN.init_weights()
             
