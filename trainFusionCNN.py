@@ -49,7 +49,11 @@ if __name__ == '__main__':
     model.folder="fusion_weights/"
     
     
-    opti = optim.Adam(model.model.parameters(), lr=0.001)
+    opti = optim.Adam(
+        model.model.parameters(), 
+        lr=0.001,
+        weight_decay=0.0001,
+    )
     
 
     model.train(
@@ -58,7 +62,7 @@ if __name__ == '__main__':
         epochs=epoch,
         batch_size=batch,
         lr=0.001,
-        optimizer=optim.Adam(model.model.parameters(), lr=0.001),
+        optimizer=opti,
         criterion=DOF6Loss(size_average=True),
         save_name='FusionCNN',
         sequence="all"

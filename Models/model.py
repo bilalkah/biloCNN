@@ -18,16 +18,18 @@ class Model():
         
         self.file = open(save_name+".txt","w")
         self.file.writelines(f"{sequence}\n")
+        
+        self.val_loss.append(0)
         for epoch in range(epochs):
             with tqdm.tqdm(train_loader,unit="batch") as tepoch:
                 tepoch.set_description(f"Epoch {epoch}")
                 epoch_loss = []
                 
-                for data, target in tepoch:
-                    data, target = data.to(self.device), target.to(self.device)
+                for img,pcd, target in tepoch:
+                    img,pcd, target = img.to(self.device),pcd.to(self.device), target.to(self.device)
 
                     optimizer.zero_grad()
-                    scores = self.model(data)
+                    scores = self.model(img,pcd)
                     loss = criterion(scores, target)
                     if torch.isnan(loss):
                         continue
@@ -37,14 +39,14 @@ class Model():
                     loss.backward()
                     optimizer.step()
             
-                    tepoch.set_postfix(T_loss = loss.item(),V_loss=0)
+                    tepoch.set_postfix(T_loss = loss.item(),V_loss=self.val_loss[-1])
                     sleep(0.1)
 
                 epoch_val_loss = []
                 
-                for _ ,(data, target) in enumerate(val_loader):
-                    data, target = data.to(self.device), target.to(self.device)
-                    scores = self.model(data)
+                for _ ,(img,pcd, target) in enumerate(val_loader):
+                    img,pcd, target = img.to(self.device),pcd.to(self.device), target.to(self.device)
+                    scores = self.model(img,pcd)
                     loss = criterion(scores, target) 
                     epoch_val_loss.append(loss.item())
                     
