@@ -33,12 +33,12 @@ class FusionCNN(nn.Module):
         
         self.translationNet = Regressor(
             in_channels=1280,
-            out_channels=2*translation,
+            out_channels=translation,
         )
         
         self.rotationNet = Regressor(
             in_channels=1280,
-            out_channels=2*rotation,
+            out_channels=rotation,
         )
             
         if LidarCNNweight is not None:
@@ -69,7 +69,8 @@ class FusionCNN(nn.Module):
         for param in self.lidarCNN.parameters():
             param.requires_grad = True
         
-    def forward(self,img, lidar):
+    def forward(self,data):
+        img,lidar = data
         cameraOut = self.cameraCNN.featureNet(img)
         LidarOut = self.lidarCNN.featureNet(lidar).view(lidar.size(0),-1)
         

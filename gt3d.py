@@ -35,7 +35,7 @@ fig2 = plt.figure()
 ax = fig2.gca(projection='3d')
 ax.set_xlabel('X')
 ax.set_zlabel('Z')
-for i in range(3000,3100):
+for i in range(3000,3020):
     r= R.from_matrix([[dataset.poses[i][0][0], dataset.poses[i][0][1], dataset.poses[i][0][2]], [dataset.poses[i][1][0], dataset.poses[i][1][1], dataset.poses[i][1][2]], [dataset.poses[i][2][0], dataset.poses[i][2][1], dataset.poses[i][2][2]]])
     v2=r.apply(v) # global referansa gore bakis acisi v2'de
     ax.quiver(x[i], y[i], z[i], v2[0], v2[1], v2[2])

@@ -1,7 +1,7 @@
 from Models.model import Model
 from FusionCNN import FusionCNN
 from Dataset.dataset import *
-from Loss.loss import DOF6Loss
+from Loss.loss import *
 
 import torch
 import torch.nn as nn
@@ -60,10 +60,8 @@ if __name__ == '__main__':
         train_loader=train_loader,
         val_loader=val_loader,
         epochs=epoch,
-        batch_size=batch,
-        lr=0.001,
         optimizer=opti,
-        criterion=DOF6Loss(size_average=True),
+        criterion=DOF6LossBase(size_average=True),
         save_name='FusionCNN',
         sequence="all"
     )

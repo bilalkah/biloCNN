@@ -34,15 +34,15 @@ class LidarCNN(nn.Module):
         super(LidarCNN,self).__init__()
         self.featureNet = self.create_darknet19_features()
         
-        self.translationNet = Regressor(
-            in_channels=1280,
-            out_channels=2*translation,
-        )
+        # self.translationNet = Regressor(
+        #     in_channels=1280,
+        #     out_channels=2*translation,
+        # )
         
-        self.rotationNet = Regressor(
-            in_channels=1280,
-            out_channels=2*rotation,
-        )
+        # self.rotationNet = Regressor(
+        #     in_channels=1280,
+        #     out_channels=2*rotation,
+        # )
         
         self.init_weights()
         
@@ -79,12 +79,12 @@ class LidarCNN(nn.Module):
                 nn.init.constant_(m.bias, 0)
     
     def forward(self,x):
-        self.ft = self.featureNet(x).view(x.size(0),-1)
-        translation = self.translationNet(self.ft)
-        rotation = self.rotationNet(self.ft)
+        # self.ft = self.featureNet(x).view(x.size(0),-1)
+        # translation = self.translationNet(self.ft)
+        # rotation = self.rotationNet(self.ft)
         
-        return torch.cat((translation, rotation), dim=1)
-    
+        # return torch.cat((translation, rotation), dim=1)
+        return self.featureNet(x).view(x.size(0),-1)
     
 if __name__ == '__main__':
     model = LidarCNN()

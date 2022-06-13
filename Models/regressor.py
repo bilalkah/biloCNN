@@ -15,9 +15,8 @@ class Regressor(nn.Module):
         in_cha = self.in_channels
         for _, middle_channels in enumerate(self.middle_channels):
             regressor.append(
-                nn.Linear(in_cha, middle_channels)
-            )
-            regressor.append(
+                nn.Linear(in_cha, middle_channels),
+                nn.Dropout(0.5),
                 nn.ReLU()
             )
             in_cha = middle_channels

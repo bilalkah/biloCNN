@@ -630,21 +630,21 @@ class KittiAllDataset(Dataset):
         # convert rotation angles shape from (3,1) to (3,)
         rotation_angles = rotation_angles.reshape(3)
         
-        rotation_signs = np.ones(3, dtype=np.float)
-        translation_signs = np.ones(3, dtype=np.float)
+        # rotation_signs = np.ones(3, dtype=np.float)
+        # translation_signs = np.ones(3, dtype=np.float)
         
-        for i in range(translation.shape[0]):
-            if translation[i] < 0:
-                translation_signs[i] = 0
-                translation[i] = -translation[i]
-            if rotation_angles[i] < 0:
-                rotation_signs[i] = 0
-                rotation_angles[i] = -rotation_angles[i]
+        # for i in range(translation.shape[0]):
+        #     if translation[i] < 0:
+        #         translation_signs[i] = 0
+        #         translation[i] = -translation[i]
+        #     if rotation_angles[i] < 0:
+        #         rotation_signs[i] = 0
+        #         rotation_angles[i] = -rotation_angles[i]
         
-        translation = np.concatenate((translation, translation_signs), axis=0)
-        rotation = np.concatenate((rotation_angles, rotation_signs), axis=0)
+        # translation = np.concatenate((translation, translation_signs), axis=0)
+        # rotation = np.concatenate((rotation_angles, rotation_signs), axis=0)
         
-        odometry = np.concatenate((translation, rotation), axis=0)
+        odometry = np.concatenate((translation, rotation_angles), axis=0)
         
         # print(odometry.shape)
         
@@ -773,21 +773,21 @@ class KittiDataset(Dataset):
         # convert rotation angles shape from (3,1) to (3,)
         rotation_angles = rotation_angles.reshape(3)
         
-        rotation_signs = np.ones(3, dtype=np.float)
-        translation_signs = np.ones(3, dtype=np.float)
+        # rotation_signs = np.ones(3, dtype=np.float)
+        # translation_signs = np.ones(3, dtype=np.float)
         
-        for i in range(translation.shape[0]):
-            if translation[i] < 0:
-                translation_signs[i] = 0
-                translation[i] = -translation[i]
-            if rotation_angles[i] < 0:
-                rotation_signs[i] = 0
-                rotation_angles[i] = -rotation_angles[i]
+        # for i in range(translation.shape[0]):
+        #     if translation[i] < 0:
+        #         translation_signs[i] = 0
+        #         translation[i] = -translation[i]
+        #     if rotation_angles[i] < 0:
+        #         rotation_signs[i] = 0
+        #         rotation_angles[i] = -rotation_angles[i]
         
-        translation = np.concatenate((translation, translation_signs), axis=0)
-        rotation = np.concatenate((rotation_angles, rotation_signs), axis=0)
+        # translation = np.concatenate((translation, translation_signs), axis=0)
+        # rotation = np.concatenate((rotation_angles, rotation_signs), axis=0)
         
-        odometry = np.concatenate((translation, rotation), axis=0)
+        odometry = np.concatenate((translation, rotation_angles), axis=0)
         
         # print(odometry)
         # drop last dimension

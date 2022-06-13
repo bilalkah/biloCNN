@@ -34,14 +34,20 @@ class DOF6Loss(nn.Module):
         prediction[:,6:9] = prediction[:,6:9]*1000
         target[:,6:9] = target[:,6:9]*1000
         
-        loss = torch.sum((prediction - target)**2,dim=1)
+        # mse loss for translation torch.nn.Functional.mse_loss
         
+        
+        
+        
+        
+        # #loss = torch.sum((prediction - target)**2,dim=1)
+                
 
-        # calculate average loss
-        if self.size_average:
-            loss = torch.mean(loss)
-        else:
-            loss = torch.sum(loss)
+        # # calculate average loss
+        # if self.size_average:
+        #     loss = torch.mean(loss)
+        # else:
+        #     loss = torch.sum(loss)
         
         
         return loss

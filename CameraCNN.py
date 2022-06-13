@@ -22,15 +22,15 @@ class CameraCNN(nn.Module):
         in_channels=in_channels,
         )
         
-        self.translationNet = Regressor(
-            in_channels=1280,
-            out_channels=2*translation,
-        )
+        # self.translationNet = Regressor(
+        #     in_channels=1280,
+        #     out_channels=2*translation,
+        # )
         
-        self.rotationNet = Regressor(
-            in_channels=1280,
-            out_channels=2*rotation,
-        )
+        # self.rotationNet = Regressor(
+        #     in_channels=1280,
+        #     out_channels=2*rotation,
+        # )
         
         # initialize weights with 
         self.init_weights()
@@ -49,14 +49,14 @@ class CameraCNN(nn.Module):
                 nn.init.constant_(m.bias, 0)
         
     def forward(self, x):
-        ft = self.featureNet(x)
+        # ft = self.featureNet(x)
         
-        out_translation = self.translationNet(ft)
-        out_rotation = self.rotationNet(ft)
+        # out_translation = self.translationNet(ft)
+        # out_rotation = self.rotationNet(ft)
 
-        # concatenate translation and rotation
-        return torch.cat((out_translation, out_rotation), dim=1)
-        
+        # # concatenate translation and rotation
+        # return torch.cat((out_translation, out_rotation), dim=1)
+        return self.featureNet(x)
     
     
 if __name__ == '__main__':

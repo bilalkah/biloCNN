@@ -14,8 +14,8 @@ class Model():
         self.folder = folder
         
         
-    def train(self,train_loader,val_loader,epochs,batch_size,lr,optimizer,criterion,save_name,sequence):
-        
+    def train(self,train_loader,val_loader,epochs,optimizer,criterion,save_name,sequence):
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
         self.file = open(save_name+".txt","w")
         self.file.writelines(f"{sequence}\n")
         
@@ -25,11 +25,11 @@ class Model():
                 tepoch.set_description(f"Epoch {epoch}")
                 epoch_loss = []
                 
-                for img,pcd, target in tepoch:
-                    img,pcd, target = img.to(self.device),pcd.to(self.device), target.to(self.device)
+                for data, target in tepoch:
+                    data, target = data.to(self.device), target.to(self.device)
 
                     optimizer.zero_grad()
-                    scores = self.model(img,pcd)
+                    scores = self.model(data)
                     loss = criterion(scores, target)
                     if torch.isnan(loss):
                         continue
@@ -39,20 +39,20 @@ class Model():
                     loss.backward()
                     optimizer.step()
             
-                    tepoch.set_postfix(T_loss = loss.item(),V_loss=self.val_loss[-1])
+                    tepoch.set_postfix(T = loss.item(),V=self.val_loss[-1])
                     sleep(0.1)
 
                 epoch_val_loss = []
                 
-                for _ ,(img,pcd, target) in enumerate(val_loader):
-                    img,pcd, target = img.to(self.device),pcd.to(self.device), target.to(self.device)
-                    scores = self.model(img,pcd)
-                    loss = criterion(scores, target) 
-                    epoch_val_loss.append(loss.item())
+                with torch.no_grad():
+                    for _ ,(data, target) in enumerate(val_loader):
+                        data, target = data.to(self.device), target.to(self.device)
+                        scores = self.model(data)
+                        loss = criterion(scores, target) 
+                        epoch_val_loss.append(loss.item())
                     
                 self.val_loss.append(np.mean(epoch_val_loss))
                 self.train_loss.append(np.mean(epoch_loss))
-                tepoch.set_postfix(T_loss = self.train_loss[-1], V_loss=self.val_loss[-1])
                 self.file.writelines(f"{epoch} {self.train_loss[-1]} {self.val_loss[-1]}\n")
                 self.save_weight(name=save_name+"_"+sequence+"_"+str(self.train_loss[-1]))
         self.file.close()
