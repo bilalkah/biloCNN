@@ -40,14 +40,54 @@ class DOF6Loss(nn.Module):
         
         
         
-        # #loss = torch.sum((prediction - target)**2,dim=1)
+        loss = torch.sum((prediction - target)**2,dim=1)
                 
 
-        # # calculate average loss
-        # if self.size_average:
-        #     loss = torch.mean(loss)
-        # else:
-        #     loss = torch.sum(loss)
+        # calculate average loss
+        if self.size_average:
+            loss = torch.mean(loss)
+        else:
+            loss = torch.sum(loss)
+        
+        
+        return loss
+    
+    
+class DOF6LossBase(nn.Module):
+    """
+    0 <= alpha <= 1
+    0 <= gamma <=5
+    """
+    def __init__(self,epsilon=1e-9,weight=None,size_average=True) -> None:
+        super(DOF6Loss,self).__init__()
+        self.epsilon = epsilon
+        self.size_average = size_average
+        self.weight = weight
+        
+        
+    def forward(self,pred,tar):
+        prediction = pred.clone()
+        target = tar.clone()
+        loss = torch.zeros(prediction.shape[0],dtype=torch.float)
+
+
+        prediction += self.epsilon
+        
+        # mean square error
+        prediction[:,0:3] = prediction[:,0:3]*100
+        target[:,0:3] = target[:,0:3]*100
+        
+        prediction[:,3:6] = prediction[:,3:6]*1000
+        target[:,3:6] = target[:,3:6]*1000
+        
+        loss = torch.sum((prediction - target)**2,dim=1)
+                
+
+        # calculate average loss
+        if self.size_average:
+            loss = torch.mean(loss)
+        else:
+            loss = torch.sum(loss)
         
         
         return loss
