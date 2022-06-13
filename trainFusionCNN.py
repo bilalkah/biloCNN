@@ -40,9 +40,9 @@ if __name__ == '__main__':
     model = Model(
         FusionCNN(
             in_channels=6,
-            LidarCNNweight="lidar_weights/LidarCNN.pth",
-            CameraCNNweight="camera_weights/CameraCNN.pth",
-            frozeLayers=True,
+            LidarCNNweight=None,
+            CameraCNNweight=None,
+            frozeLayers=False,
             ),
         'cuda' if torch.cuda.is_available() else 'cpu'
     )
