@@ -26,7 +26,7 @@ class Model():
                 epoch_loss = []
                 
                 for data, target in tepoch:
-                    data, target = data.to(self.device), target.to(self.device)
+                    data, target = data[:].to(self.device), target.to(self.device)
 
                     optimizer.zero_grad()
                     scores = self.model(data)
@@ -46,7 +46,7 @@ class Model():
                 
                 with torch.no_grad():
                     for _ ,(data, target) in enumerate(val_loader):
-                        data, target = data.to(self.device), target.to(self.device)
+                        data, target = data[:].to(self.device), target.to(self.device)
                         scores = self.model(data)
                         loss = criterion(scores, target) 
                         epoch_val_loss.append(loss.item())
