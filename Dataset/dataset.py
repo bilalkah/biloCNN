@@ -651,7 +651,7 @@ class KittiAllDataset(Dataset):
         # drop last dimension
         odometry = torch.from_numpy(odometry)
         odometry = odometry.type(torch.FloatTensor)
-        return (img, pcd), odometry
+        return img, pcd, odometry
 
 class KittiDataset(Dataset):
     def __init__(self, sequence="00", max_range = 120, path="/home/plnm/biloCNN/kitti"):
@@ -792,7 +792,7 @@ class KittiDataset(Dataset):
         # print(odometry)
         # drop last dimension
         odometry = torch.from_numpy(odometry)
-        return (img, pcd), odometry
+        return img, pcd, odometry
         
         
 if __name__ == "__main__":
