@@ -69,8 +69,8 @@ class FusionCNN(nn.Module):
         for param in self.lidarCNN.parameters():
             param.requires_grad = True
         
-    def forward(self,data):
-        img,lidar = data
+    def forward(self,img,lidar):
+        # img,lidar = data
         cameraOut = self.cameraCNN.featureNet(img)
         LidarOut = self.lidarCNN.featureNet(lidar).view(lidar.size(0),-1)
         
