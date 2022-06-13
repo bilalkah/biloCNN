@@ -59,7 +59,7 @@ class DOF6LossBase(nn.Module):
     0 <= gamma <=5
     """
     def __init__(self,epsilon=1e-9,weight=None,size_average=True) -> None:
-        super(DOF6Loss,self).__init__()
+        super(DOF6LossBase,self).__init__()
         self.epsilon = epsilon
         self.size_average = size_average
         self.weight = weight
