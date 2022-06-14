@@ -15,7 +15,7 @@ class Model():
         
         
     def train(self,train_loader,val_loader,epochs,optimizer,criterion,save_name,sequence):
-        # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
         self.file = open(save_name+".txt","w")
         self.file.writelines(f"{sequence}\n")
         
@@ -56,6 +56,7 @@ class Model():
                 # tepoch.set_postfix(T_loss = self.train_loss[-1], V_loss=self.val_loss[-1])
                 self.file.writelines(f"{epoch} {self.train_loss[-1]} {self.val_loss[-1]}\n")
                 self.save_weight(name=save_name+"_"+sequence+"_"+str(self.train_loss[-1]))
+            scheduler.step()
         self.file.close()
                 
     def eval(self,test_loader):
