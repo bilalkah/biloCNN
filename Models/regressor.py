@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class Regressor(nn.Module):
-    def __init__(self, in_channels = 1280, mid_channels = [512,256,128], out_channels = 3):
+    def __init__(self, in_channels = 1280, mid_channels = [256,128], out_channels = 3):
         super(Regressor, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -17,7 +17,7 @@ class Regressor(nn.Module):
             regressor.append(
                 nn.Sequential(
                     nn.Linear(in_cha, middle_channels),
-                    nn.Dropout(0.5),
+                    nn.Dropout(0.2),
                     nn.ReLU()
                 )
             )

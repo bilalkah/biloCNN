@@ -495,11 +495,12 @@ class KittiPCLDataset(Dataset):
         
         
 class KittiAllDataset(Dataset):
-    def __init__(self, sequence=["00"], max_range = 120, path = "/home/plnm/biloCNN/kitti"):
+    def __init__(self, sequence=["00"], max_range = 120, path = "/home/bilal/Desktop/project/data_odometry_color/dataset",data_aug=False):
         self.sequence = sequence
         self.path = path
         self.dataset = []
         self.range = max_range
+        self.data_aug = data_aug
         
         for seq in self.sequence:
             self.dataset.append(pykitti.odometry(self.path, seq))
@@ -509,41 +510,63 @@ class KittiAllDataset(Dataset):
         self.load_poses()
 
     def load_poses(self):
-        for k in range(len(self.sequence)):
-            data_k = 0
-            for pose in self.dataset[k].poses:
-                homogenous_matrix = np.zeros((4, 4), dtype=np.float)
-                
+        for dataset_k in range(len(self.dataset)):
+
+            for k in range(len(self.dataset[dataset_k].poses)-1):
+                current_pose = self.dataset[dataset_k].poses[k]
+                current_matrix = np.zeros((4, 4), dtype=np.float)
                 for i in range(3):
                     for j in range(4):
-                        homogenous_matrix[i][j] = pose[i][j]
-                homogenous_matrix[3][3] = 1
+                        current_matrix[i][j] = current_pose[i][j]
+            
+                current_matrix[3][3] = 1
+            
+                next_pose = self.dataset[dataset_k].poses[k+1]
+                next_matrix = np.zeros((4, 4), dtype=np.float)
+                for i in range(3):
+                    for j in range(4):
+                        next_matrix[i][j] = next_pose[i][j]
                 
-                self.poses.append([homogenous_matrix,k,data_k])
-                data_k += 1
-                
-        
+                next_matrix[3][3] = 1
+            
+                self.poses.append([current_matrix,next_matrix,k,k+1,dataset_k])
+                # reverse order
+                if self.data_aug:
+                    self.poses.append([next_matrix,current_matrix,k+1,k,dataset_k])
+                    
+        if self.data_aug: 
+            for dataset_k in range(len(self.sequence)):
+                # skip 1 frame
+                for k in range(len(self.dataset[dataset_k].poses)-2):
+                    if k % 2 == 1:
+                        continue
+                    current_pose = self.dataset[dataset_k].poses[k]
+                    current_matrix = np.zeros((4, 4), dtype=np.float)
+                    for i in range(3):
+                        for j in range(4):
+                            current_matrix[i][j] = current_pose[i][j]
+                    
+                    current_matrix[3][3] = 1
+                    
+                    next_pose = self.dataset[dataset_k].poses[k+2]
+                    next_matrix = np.zeros((4, 4), dtype=np.float)
+                    for i in range(3):
+                        for j in range(4):
+                            next_matrix[i][j] = next_pose[i][j]
+                    
+                    next_matrix[3][3] = 1
+                    
+                    self.poses.append([current_matrix,next_matrix,k,k+2,dataset_k])
+                    print([current_matrix,next_matrix,k,k+2,dataset_k])
+            
     def __len__(self):
-        return len(self.poses)-1
+        return len(self.poses)
 
-    def __getitem__(self, idx):
-        if idx >= len(self.poses):
-            print(idx)
-            raise IndexError("Index out of range")
-        elif idx < 0:
-            print(idx)
-            raise IndexError("Index out of range")
+    def __getitem__(self, index):
+        previous, current,  idx, idx_next ,dataset_k= self.poses[index]
         
-        dataset_k = self.poses[idx][1]
-        data_k = self.poses[idx][2]
-        
-        if data_k == len(self.dataset[dataset_k])-1:
-            idx -= 1
-            dataset_k = self.poses[idx][1]
-            data_k = self.poses[idx][2] 
-        
-        img1 = cv2.imread(self.dataset[dataset_k].cam2_files[data_k])
-        img2 = cv2.imread(self.dataset[dataset_k].cam2_files[data_k+1])
+        img1 = cv2.imread(self.dataset[dataset_k].cam2_files[idx])
+        img2 = cv2.imread(self.dataset[dataset_k].cam2_files[idx_next])
         
         # concatenate images
         img = np.concatenate((img1, img2), axis=2)
@@ -556,8 +579,8 @@ class KittiAllDataset(Dataset):
         
         
         # get pointcloud data
-        pcl1 = self.dataset[dataset_k].get_velo(data_k)[:,:3]
-        pcl2 = self.dataset[dataset_k].get_velo(data_k+1)[:,:3]
+        pcl1 = self.dataset[dataset_k].get_velo(idx)[:,:3]
+        pcl2 = self.dataset[dataset_k].get_velo(idx_next)[:,:3]
         
         # convert pcd to pointcloud
         pcd1 = geometry.PointCloud()
@@ -614,8 +637,7 @@ class KittiAllDataset(Dataset):
         pcd = np.concatenate((pcd1, pcd2), axis=0)
         pcd = torch.from_numpy(pcd)
         
-        previous = self.poses[idx][0]
-        current = self.poses[idx+1][0]
+
         
         rotation_prev = previous[:3, :3]
         translation_prev = previous[:3, 3]
@@ -630,34 +652,33 @@ class KittiAllDataset(Dataset):
         # convert rotation angles shape from (3,1) to (3,)
         rotation_angles = rotation_angles.reshape(3)
         
-        # rotation_signs = np.ones(3, dtype=np.float)
-        # translation_signs = np.ones(3, dtype=np.float)
+        rotation_signs = np.ones(3, dtype=np.float)
+        translation_signs = np.ones(3, dtype=np.float)
         
-        # for i in range(translation.shape[0]):
-        #     if translation[i] < 0:
-        #         translation_signs[i] = 0
-        #         translation[i] = -translation[i]
-        #     if rotation_angles[i] < 0:
-        #         rotation_signs[i] = 0
-        #         rotation_angles[i] = -rotation_angles[i]
+        for i in range(translation.shape[0]):
+            if translation[i] < 0:
+                translation_signs[i] = 0
+                translation[i] = -translation[i]
+            if rotation_angles[i] < 0:
+                rotation_signs[i] = 0
+                rotation_angles[i] = -rotation_angles[i]
         
-        # translation = np.concatenate((translation, translation_signs), axis=0)
-        # rotation = np.concatenate((rotation_angles, rotation_signs), axis=0)
+        translation = np.concatenate((translation, translation_signs), axis=0)
+        rotation = np.concatenate((rotation_angles, rotation_signs), axis=0)
         
         odometry = np.concatenate((translation, rotation_angles), axis=0)
-        
-        # print(odometry.shape)
-        
+
         # drop last dimension
         odometry = torch.from_numpy(odometry)
         odometry = odometry.type(torch.FloatTensor)
         return img, pcd, odometry
 
 class KittiDataset(Dataset):
-    def __init__(self, sequence="00", max_range = 120, path="/home/plnm/biloCNN/kitti"):
+    def __init__(self, sequence="00", max_range = 120, path="/home/bilal/Desktop/project/data_odometry_color/dataset", data_aug=False):
         self.sequence = sequence
         self.range = max_range
         self.path = path
+        self.data_aug = data_aug
         
         self.dataset = pykitti.odometry(self.path, self.sequence)
         self.poses = []
@@ -665,32 +686,62 @@ class KittiDataset(Dataset):
         self.load_poses()
     
     def __len__(self):
-        return len(self.dataset)
+        return len(self.poses)
     
     def load_poses(self):
         
-        for pose in self.dataset.poses:
-            for pose in self.dataset.poses:
-                homogenous_matrix = np.zeros((4, 4), dtype=np.float)
+        for k in range(len(self.dataset.poses)-1):
+            current_pose = self.dataset.poses[k]
+            current_matrix = np.zeros((4, 4), dtype=np.float)
             for i in range(3):
                 for j in range(4):
-                    homogenous_matrix[i][j] = pose[i][j]
+                    current_matrix[i][j] = current_pose[i][j]
             
-            homogenous_matrix[3][3] = 1
+            current_matrix[3][3] = 1
             
-            self.poses.append(homogenous_matrix)
-    
+            next_pose = self.dataset.poses[k+1]
+            next_matrix = np.zeros((4, 4), dtype=np.float)
+            for i in range(3):
+                for j in range(4):
+                    next_matrix[i][j] = next_pose[i][j]
+            
+            next_matrix[3][3] = 1
+            
+            self.poses.append([current_matrix,next_matrix,k,k+1])
+            if self.data_aug:
+                self.poses.append([next_matrix,current_matrix,k+1,k])
+                
+        if self.data_aug: 
+            
+            # skip 1 frame
+            for k in range(len(self.dataset.poses)-2):
+                if k % 2 == 1:
+                    continue
+                current_pose = self.dataset.poses[k]
+                current_matrix = np.zeros((4, 4), dtype=np.float)
+                for i in range(3):
+                    for j in range(4):
+                        current_matrix[i][j] = current_pose[i][j]
+                
+                current_matrix[3][3] = 1
+                
+                next_pose = self.dataset.poses[k+2]
+                next_matrix = np.zeros((4, 4), dtype=np.float)
+                for i in range(3):
+                    for j in range(4):
+                        next_matrix[i][j] = next_pose[i][j]
+                
+                next_matrix[3][3] = 1
+                
+                self.poses.append([current_matrix,next_matrix,k,k+2])
+            
+        
     def __getitem__(self, index):
-        if index >= len(self.dataset):
-            raise IndexError("Index out of range")
-        elif index < 0:
-            raise IndexError("Index out of range")
-        elif index == len(self.dataset) - 1:
-            index = len(self.dataset) - 2
+        previous,current,idx,idx_next = self.poses[index]
         
         # get consecutive frames of images from the dataset
-        img1 = self.dataset.cam2_files[index]
-        img2 = self.dataset.cam2_files[index+1]
+        img1 = self.dataset.cam2_files[idx]
+        img2 = self.dataset.cam2_files[idx_next]
         
         img1 = cv2.imread(img1)
         img2 = cv2.imread(img2)
@@ -705,8 +756,8 @@ class KittiDataset(Dataset):
         
         
         # get pointcloud data
-        pcl1 = self.dataset.get_velo(index)[:,:3]
-        pcl2 = self.dataset.get_velo(index+1)[:,:3]
+        pcl1 = self.dataset.get_velo(idx)[:,:3]
+        pcl2 = self.dataset.get_velo(idx_next)[:,:3]
         
         # convert pcd to pointcloud
         pcd1 = geometry.PointCloud()
@@ -757,8 +808,6 @@ class KittiDataset(Dataset):
         pcd = np.concatenate((pcd1, pcd2), axis=0)
         pcd = torch.from_numpy(pcd)
         
-        previous = self.poses[index]
-        current = self.poses[index+1]
         
         rotation_prev = previous[:3, :3]
         translation_prev = previous[:3, 3]
@@ -770,22 +819,23 @@ class KittiDataset(Dataset):
         translation = np.dot(rotation_prev.T, translation_current) - np.dot(rotation_prev.T, translation_prev)
         
         rotation_angles = cv2.Rodrigues(rotation)[0]
+        
         # convert rotation angles shape from (3,1) to (3,)
         rotation_angles = rotation_angles.reshape(3)
         
-        # rotation_signs = np.ones(3, dtype=np.float)
-        # translation_signs = np.ones(3, dtype=np.float)
+        rotation_signs = np.ones(3, dtype=np.float)
+        translation_signs = np.ones(3, dtype=np.float)
         
-        # for i in range(translation.shape[0]):
-        #     if translation[i] < 0:
-        #         translation_signs[i] = 0
-        #         translation[i] = -translation[i]
-        #     if rotation_angles[i] < 0:
-        #         rotation_signs[i] = 0
-        #         rotation_angles[i] = -rotation_angles[i]
+        for i in range(translation.shape[0]):
+            if translation[i] < 0:
+                translation_signs[i] = 0
+                translation[i] = -translation[i]
+            if rotation_angles[i] < 0:
+                rotation_signs[i] = 0
+                rotation_angles[i] = -rotation_angles[i]
         
-        # translation = np.concatenate((translation, translation_signs), axis=0)
-        # rotation = np.concatenate((rotation_angles, rotation_signs), axis=0)
+        translation = np.concatenate((translation, translation_signs), axis=0)
+        rotation = np.concatenate((rotation_angles, rotation_signs), axis=0)
         
         odometry = np.concatenate((translation, rotation_angles), axis=0)
         
@@ -803,3 +853,64 @@ if __name__ == "__main__":
     
         
     
+    
+    
+    
+    # Dataset class for loading velodyne pointcloud data to tensor    
+# convert pointcloud data to tensor
+# data is stored in binary file
+class PCL(Dataset):
+    def __init__(self, sequence="00", max_range = 120, path = "/home/plnm/biloCNN/kitti"):
+        self.sequence = sequence
+        self.range = max_range
+        self.path = path
+        self.dataset = pykitti.odometry(self.path, self.sequence)
+
+        self.poses = []
+        
+        self.load_poses()
+    
+    def load_poses(self):
+        for pose in self.dataset.poses:
+            homogenous_matrix = np.zeros((4, 4), dtype=np.float)
+            for i in range(3):
+                for j in range(4):
+                    homogenous_matrix[i][j] = pose[i][j]
+            
+            homogenous_matrix[3][3] = 1
+            
+            self.poses.append(homogenous_matrix)
+    
+    def __len__(self):
+        return len(self.dataset)
+    
+    
+    # convert pointcloud data to tensor
+    # pointcloud is 64 channel tensor
+    # pointcloud is stored in binary file
+    # pointcloud is stored in the form of (x, y, z, intensity)
+    # x, y, z are stored in float32
+    # reduce the pointcloud to 64 channel
+    # thin the pointcloud to 1/10
+    # drop the intensity
+    def __getitem__(self, index):
+        if index >= len(self.dataset):
+            raise IndexError("Index out of range")
+        elif index < 0:
+            raise IndexError("Index out of range")
+        elif index == len(self.dataset) - 1:
+            index = len(self.dataset) - 2
+        
+        # get pointcloud data
+        pcl1 = self.dataset.get_velo(index)[:,:3]
+        pcl2 = self.dataset.get_velo(index+1)[:,:3]
+        
+        # convert pcd to pointcloud
+        pcd1 = geometry.PointCloud()
+        pcd1.points = utility.Vector3dVector(pcl1)
+        
+        pcd2 = geometry.PointCloud()
+        pcd2.points = utility.Vector3dVector(pcl2)
+        
+        
+        
